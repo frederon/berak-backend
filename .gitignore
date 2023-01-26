@@ -1,0 +1,7 @@
+# NodeJS
+node_modules
+# Python
+__pycache__
+__init__.py
+# Docker
+.docker
