@@ -1,13 +1,18 @@
 import numpy as np
 import utils
 
-m = 3 # enkripsi setiap n hurufimport utils
+m = 3 # enkripsi setiap n huruf
 
 n = 26 # ukuran alfabet
 
+def validate_key(key):
+    key_flatten = np.array(key).flatten()
+
+    if len(key_flatten) != m*m:
+        raise Exception(f"Key matrix doesn't match m, which is {m}x{m}")
+
 def encrypt(text, key):
-    if len(key) != m:
-        raise Exception(f"Key matrix doesn't match m, which is {m}")
+    validate_key(key)
     
     result = ''
     text_splitted = utils.split(text, m)
@@ -38,6 +43,8 @@ def inverse_matrix(K):
     return K_inv
 
 def decrypt(text, key):
+    validate_key(key)
+
     key_inverse = inverse_matrix(key)
     result = ''
     text_splitted = utils.split(text, m)
