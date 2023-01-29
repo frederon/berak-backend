@@ -92,10 +92,12 @@ class EnigmaMachine:
     Enigma Machine constructor
     Arguments:
         rotors: 3 positional EnigmaRotor (left to right). 
+        rings: 3 positional rotor offset
     '''
-    def __init__(self, rotors:List[EnigmaRotor], positions: List[int], plugboard: Dict[str,str]) -> None:
+    def __init__(self, rotors:List[EnigmaRotor], positions: List[int], rings: List[int], plugboard: Dict[str,str]) -> None:
         self.rotors = rotors
         self.rotor_positions = positions
+        self.rings = rings
         self.plugboard = plugboard
 
     def _plugboard_substitution(self, letter: str) -> str:
@@ -110,10 +112,11 @@ class EnigmaMachine:
     def _forward_substitution(self, letter:str)->str:
         rotor_positions = self.rotor_positions
         rotors = self.rotors
+        rings = self.rings
         for i in range(len(rotors)-1,-1,-1):
             rotor = rotors[i]
             rotor_wiring = EnigmaRotor.get_wiring(rotor)
-            shift = rotor_positions[i]
+            shift = rotor_positions[i] - rings[i]
 
             letter = rotor_wiring[(ord(letter) - ord("A") + shift) % 26]
             letter = chr(ord("A") + (ord(letter) - ord("A") + 26 - shift) % 26)
@@ -123,10 +126,11 @@ class EnigmaMachine:
     def _backward_substitution(self, letter:str)->str:
         rotor_positions = self.rotor_positions
         rotors = self.rotors
+        rings = self.rings
         for i in range(len(rotors)):
             rotor = rotors[i]
             rotor_inverse_wiring = EnigmaRotor.get_inverse_wiring(rotor)
-            shift = rotor_positions[i]
+            shift = rotor_positions[i] - rings[i]
 
             letter = rotor_inverse_wiring[(ord(letter) - ord("A") + shift) % 26]
             letter = chr(ord("A") + (ord(letter) - ord("A") + 26 - shift) % 26)
@@ -154,6 +158,6 @@ class EnigmaMachine:
             cipher_text += letter
         return cipher_text
 
-enigma = EnigmaMachine(rotors=[EnigmaRotor.III, EnigmaRotor.IV, EnigmaRotor.II], positions=[24,9,3], plugboard={})
+enigma = EnigmaMachine(rotors=[EnigmaRotor.III, EnigmaRotor.IV, EnigmaRotor.II], positions=[24,9,3], rings=[1,3,6], plugboard={})
 cipher = enigma.encrypt("HELLOMYNAMEISENIGMAIMONEWELLKNOWNFORTHEVITALROLEIPLAYEDDURINGWWIIALANTURINGANDHISATTEMPTSTOCRACKTHEENIGMAMACHINECODECHANGEDHISTORY")
 print(cipher)
