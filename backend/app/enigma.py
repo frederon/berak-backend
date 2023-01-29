@@ -158,6 +158,10 @@ class EnigmaMachine:
             cipher_text += letter
         return cipher_text
 
-enigma = EnigmaMachine(rotors=[EnigmaRotor.III, EnigmaRotor.IV, EnigmaRotor.II], positions=[24,9,3], rings=[1,3,6], plugboard={})
-cipher = enigma.encrypt("HELLOMYNAMEISENIGMAIMONEWELLKNOWNFORTHEVITALROLEIPLAYEDDURINGWWIIALANTURINGANDHISATTEMPTSTOCRACKTHEENIGMAMACHINECODECHANGEDHISTORY")
+encryptor = EnigmaMachine(rotors=[EnigmaRotor.III, EnigmaRotor.IV, EnigmaRotor.II], positions=[24,9,3], rings=[1,3,6], plugboard={})
+cipher = encryptor.encrypt("HELLOMYNAMEISENIGMAIMONEWELLKNOWNFORTHEVITALROLEIPLAYEDDURINGWWIIALANTURINGANDHISATTEMPTSTOCRACKTHEENIGMAMACHINECODECHANGEDHISTORY")
+
+decryptor = EnigmaMachine(rotors=[EnigmaRotor.III, EnigmaRotor.IV, EnigmaRotor.II], positions=[24,9,3], rings=[1,3,6], plugboard={})
+plaintext = decryptor.encrypt(cipher)
 print(cipher)
+print(plaintext)
