@@ -22,9 +22,6 @@ class EnigmaRotor(Enum):
     @classmethod
     def get_wiring(cls, rotor: 'EnigmaRotor'):
         if rotor == EnigmaRotor.I:
-#                  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-#                  "JEKMFLGDQVZNTOWYHXUSPAIBRC"
-#                  "CJEKMFLGDQVZNTOWYHXUSPAIBR"
             return "EKMFLGDQVZNTOWYHXUSPAIBRCJ"
         if rotor == EnigmaRotor.II:
             return "AJDKSIRUXBLHWTMCQGZNPYFVOE"
@@ -45,6 +42,19 @@ class EnigmaRotor(Enum):
             return "TAGBPCSDQEUFVNZHYIXJWLRKOM"
         if rotor == EnigmaRotor.IV:
             return "HZWVARTNLGUPXQCEJMBSKDYOIF"
+
+        raise ValueError()
+
+    @classmethod
+    def get_turnover_notch(cls, rotor: 'EnigmaRotor'):
+        if rotor == EnigmaRotor.I:
+            return "Q"
+        if rotor == EnigmaRotor.II:
+            return "E"
+        if rotor == EnigmaRotor.III:
+            return "V"
+        if rotor == EnigmaRotor.IV:
+            return "J"
 
         raise ValueError()
 
@@ -107,7 +117,6 @@ class EnigmaMachine:
 
             letter = rotor_wiring[(ord(letter) - ord("A") + shift) % 26]
             letter = chr(ord("A") + (ord(letter) - ord("A") + 26 - shift) % 26)
-            print(f"Wheel {3-i} Encryption: ", letter, rotor_wiring, rotor_positions)
 
         return letter
 
@@ -121,19 +130,17 @@ class EnigmaMachine:
 
             letter = rotor_inverse_wiring[(ord(letter) - ord("A") + shift) % 26]
             letter = chr(ord("A") + (ord(letter) - ord("A") + 26 - shift) % 26)
-            print(f"Wheel {i} Encryption: ", letter)
-        # for i, rotor in enumerate(rotors):
-        #     rotor_wiring = EnigmaRotor.get_wiring(rotor)
-        #     letter = rotor_wiring[(rotor_wiring.index(letter) - rotor_positions[i]) % 26]
-        #     print(f"Wheel {i} Encryption: ", letter)
+
         return letter
 
     def _advance_rotors(self):
-        carry = 1
-        for i in range(len(self.rotors)-1, -1, -1):
-            curr = self.rotor_positions[i]
-            self.rotor_positions[i] = (curr + carry)
-            carry = (curr + carry)//26
+        if chr(self.rotor_positions[1]  + ord('A')) == EnigmaRotor.get_turnover_notch(self.rotors[1]):
+            self.rotor_positions[1] = (self.rotor_positions[1] + 1) % 26
+            self.rotor_positions[0] = (self.rotor_positions[0] + 1) % 26
+        if chr(self.rotor_positions[2]  + ord('A')) == EnigmaRotor.get_turnover_notch(self.rotors[2]):
+            self.rotor_positions[1] = (self.rotor_positions[1] + 1) % 26
+
+        self.rotor_positions[2] = (self.rotor_positions[2] + 1) % 26
 
     def encrypt(self, message: str) -> str:
         cipher_text = ""
@@ -142,25 +149,11 @@ class EnigmaMachine:
             letter = self._plugboard_substitution(letter)
             letter = self._forward_substitution(letter)
             letter = self._reflector_substitution(letter)
-            print("Reflector Encryption: ", letter)
             letter = self._backward_substitution(letter)
             letter = self._plugboard_substitution(letter)
             cipher_text += letter
-
         return cipher_text
 
-# wirings = ["EKMFLGDQVZNTOWYHXUSPAIBRCJ", "AJDKSIRUXBLHWTMCQGZNPYFVOE","BDFHJLCPRTXVZNYEIWGAKMUSQO", "ESOVPZJAYQUIRHXLNFTGKDCMWB"]
-# rwiring = [["0" for _ in range(26)] for _ in range(4)]
-# for i in range(0, 4):
-#     wiring = wirings[i]
-#     print(wiring, i)
-#     for j in range(0, len(wiring)):
-#         rwiring[i][ord(wiring[j]) - ord("A")] = chr(ord("A") + j)
-#     print("HMM", rwiring)
-
-# for rwire in rwiring:
-#     print("".join(rwire))
-
-enigma = EnigmaMachine(rotors=[EnigmaRotor.I, EnigmaRotor.IV, EnigmaRotor.II], positions=[0,0,1], plugboard={})
-cipher = enigma.encrypt("HELLO")
+enigma = EnigmaMachine(rotors=[EnigmaRotor.III, EnigmaRotor.IV, EnigmaRotor.II], positions=[24,9,3], plugboard={})
+cipher = enigma.encrypt("HELLOMYNAMEISENIGMAIMONEWELLKNOWNFORTHEVITALROLEIPLAYEDDURINGWWIIALANTURINGANDHISATTEMPTSTOCRACKTHEENIGMAMACHINECODECHANGEDHISTORY")
 print(cipher)
