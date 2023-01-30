@@ -1,18 +1,8 @@
+# pylint: disable=no-self-argument,no-self-use
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-
-todos = [
-    {
-        "id": "1",
-        "item": "Read a book."
-    },
-    {
-        "id": "2",
-        "item": "Cycle around town."
-    }
-]
-
+from pydantic import BaseModel, validator
+from . import vigenere, utils
 
 app = FastAPI()
 
@@ -23,55 +13,66 @@ origins = [
 
 
 app.add_middleware(
-        CORSMiddleware,
-        allow_origins=origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"]
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
 )
 
 
 @app.get("/", tags=["root"])
 async def read_root() -> dict:
-    return {"message": "Welcome to your todo list."}
+    return {"message": "Cryptography Tucil 1 API"}
 
 
-@app.get("/todo", tags=["todos"])
-async def get_todos() -> dict:
-    return { "data": todos }
+class VigenereEncryptRequest(BaseModel):
+    plaintext: str
+    key: str
+
+    @validator('plaintext')
+    def validate_plaintext(cls, plaintext):
+        return utils.uppercase_and_filter_alphabets(plaintext)
+
+    @validator('key')
+    def validate_key(cls, key):
+        return utils.uppercase_and_filter_alphabets(key)
 
 
-@app.post("/todo", tags=["todos"])
-async def add_todo(todo: dict) -> dict:
-    todos.append(todo)
-    return {
-        "data": { "Todo added." }
-    }
+class VigenereEncryptResponse(BaseModel):
+    ciphertext: str
 
 
-@app.put("/todo/{id}", tags=["todos"])
-async def update_todo(id: int, body: dict) -> dict:
-    for todo in todos:
-        if int(todo["id"]) == id:
-            todo["item"] = body["item"]
-            return {
-                "data": f"Todo with id {id} has been updated."
-            }
-
-    return {
-        "data": f"Todo with id {id} not found."
-    }
+@app.post("/vigenere/encrypt", tags=["vigenere"], response_model=VigenereEncryptResponse)
+async def vigenere_encrypt(body: VigenereEncryptRequest) -> dict:
+    try:
+        ciphertext = vigenere.encrypt(body.plaintext, body.key)
+        return {"ciphertext": ciphertext}
+    except Exception as e:
+        return {"error": e}
 
 
-@app.delete("/todo/{id}", tags=["todos"])
-async def delete_todo(id: int) -> dict:
-    for todo in todos:
-        if int(todo["id"]) == id:
-            todos.remove(todo)
-            return {
-                "data": f"Todo with id {id} has been removed."
-            }
+class VigenereDecryptRequest(BaseModel):
+    ciphertext: str
+    key: str
 
-    return {
-        "data": f"Todo with id {id} not found."
-    }
+    @validator('ciphertext')
+    def validate_plaintext(cls, ciphertext):
+        return utils.uppercase_and_filter_alphabets(ciphertext)
+
+    @validator('key')
+    def validate_key(cls, key):
+        return utils.uppercase_and_filter_alphabets(key)
+
+
+class VigenereDecryptResponse(BaseModel):
+    plaintext: str
+
+
+@app.post("/vigenere/decrypt", tags=["vigenere"], response_model=VigenereDecryptResponse)
+async def vigenere_decrypt(body: VigenereDecryptRequest) -> dict:
+    try:
+        plaintext = vigenere.decrypt(body.ciphertext, body.key)
+        return {"plaintext": plaintext}
+    except Exception as e:
+        return {"error": e}
