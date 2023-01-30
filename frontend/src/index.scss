@@ -383,12 +383,26 @@ i {
 
 .title-and-actions {
   margin-top: 0.9em;
-  margin-bottom: 1em;
   display: flex;
   justify-content: space-between;
 
   h2 {
     display: inline-block;
+  }
+}
+
+.affine-keys {
+  display: flex;
+  align-items: center;
+
+  h3 {
+    display: inline-block;
+    margin: 0;
+    margin-right: 0.5em;
+  }
+
+  .ant-input-number {
+    margin-right: 0.5em;
   }
 }
 

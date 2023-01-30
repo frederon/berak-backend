@@ -6,6 +6,7 @@ import {
 } from "react-router-dom";
 import Root from './pages/Root'
 import ErrorPage from './pages/Error';
+import Affine from './pages/Affine';
 import Vigenere from './pages/Vigenere';
 import 'antd/dist/reset.css';
 import './index.scss';
@@ -30,7 +31,7 @@ const router = createBrowserRouter([
       element: <h1>Vigenere Extended</h1>,
     }, {
       path: "affine",
-      element: <h1>Affine</h1>,
+      element: <Affine />,
     }, {
       path: "playfair",
       element: <h1>Playfair</h1>,

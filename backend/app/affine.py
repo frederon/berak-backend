@@ -1,6 +1,7 @@
-import utils
+from . import utils
 
-n = 26 # ukuran alfabet
+n = 26  # ukuran alfabet
+
 
 def encrypt(text, m, b):
     result = ''
@@ -10,6 +11,7 @@ def encrypt(text, m, b):
         result += utils.int_to_char(c)
     return result
 
+
 def decrypt(text, m, b):
     result = ''
     for char in text:
@@ -18,5 +20,6 @@ def decrypt(text, m, b):
         result += utils.int_to_char(p)
     return result
 
-print(encrypt('kripto', 7, 10))
-print(decrypt('czolne', 7, 10))
+
+# print(encrypt('kripto', 7, 10))
+# print(decrypt('czolne', 7, 10))

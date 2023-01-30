@@ -34,5 +34,5 @@ export const toUppercaseAndFilterAlphabets = (text: string): string => {
 }
 
 export const spacesEvery5Chars = (text: string,): string => {
-  return toUppercaseAndFilterAlphabets(text).match(/.{5}/g)!.join(' ');
+  return toUppercaseAndFilterAlphabets(text).match(/.{1,5}/g)!.join(' ');
 }
