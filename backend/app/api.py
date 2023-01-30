@@ -1,8 +1,9 @@
 # pylint: disable=no-self-argument,no-self-use,broad-except
-from fastapi import FastAPI
+from typing import List
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
-from . import vigenere, affine, utils
+from . import vigenere, affine, hill, utils
 
 app = FastAPI()
 
@@ -49,7 +50,7 @@ async def vigenere_encrypt(body: VigenereEncryptRequest) -> dict:
         ciphertext = vigenere.encrypt(body.plaintext, body.key)
         return {"ciphertext": ciphertext}
     except Exception as e:
-        return {"error": e}
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 class VigenereDecryptRequest(BaseModel):
@@ -57,7 +58,7 @@ class VigenereDecryptRequest(BaseModel):
     key: str
 
     @validator('ciphertext')
-    def validate_plaintext(cls, ciphertext):
+    def validate_ciphertext(cls, ciphertext):
         return utils.uppercase_and_filter_alphabets(ciphertext)
 
     @validator('key')
@@ -75,7 +76,7 @@ async def vigenere_decrypt(body: VigenereDecryptRequest) -> dict:
         plaintext = vigenere.decrypt(body.ciphertext, body.key)
         return {"plaintext": plaintext}
     except Exception as e:
-        return {"error": e}
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 class AffineEncryptRequest(BaseModel):
@@ -98,7 +99,7 @@ async def affine_encrypt(body: AffineEncryptRequest) -> dict:
         ciphertext = affine.encrypt(body.plaintext, body.m, body.b)
         return {"ciphertext": ciphertext}
     except Exception as e:
-        return {"error": e}
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 class AffineDecryptRequest(BaseModel):
@@ -107,7 +108,7 @@ class AffineDecryptRequest(BaseModel):
     b: int
 
     @validator('ciphertext')
-    def validate_plaintext(cls, ciphertext):
+    def validate_ciphertext(cls, ciphertext):
         return utils.uppercase_and_filter_alphabets(ciphertext)
 
 
@@ -121,4 +122,50 @@ async def affine_decrypt(body: AffineDecryptRequest) -> dict:
         plaintext = affine.decrypt(body.ciphertext, body.m, body.b)
         return {"plaintext": plaintext}
     except Exception as e:
-        return {"error": e}
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+class HillEncryptRequest(BaseModel):
+    plaintext: str
+    key: List[List[int]]
+    m: int
+
+    @validator('plaintext')
+    def validate_plaintext(cls, plaintext):
+        return utils.uppercase_and_filter_alphabets(plaintext)
+
+
+class HillEncryptResponse(BaseModel):
+    ciphertext: str
+
+
+@app.post("/hill/encrypt", tags=["hill"], response_model=HillEncryptResponse)
+async def hill_encrypt(body: HillEncryptRequest) -> dict:
+    try:
+        ciphertext = hill.encrypt(body.plaintext, body.key, body.m)
+        return {"ciphertext": ciphertext}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+class HillDecryptRequest(BaseModel):
+    ciphertext: str
+    key: List[List[int]]
+    m: int
+
+    @validator('ciphertext')
+    def validate_ciphertext(cls, ciphertext):
+        return utils.uppercase_and_filter_alphabets(ciphertext)
+
+
+class HillDecryptResponse(BaseModel):
+    plaintext: str
+
+
+@app.post("/hill/decrypt", tags=["hill"], response_model=HillDecryptResponse)
+async def hill_decrypt(body: HillDecryptRequest) -> dict:
+    try:
+        plaintext = hill.decrypt(body.ciphertext, body.key, body.m)
+        return {"plaintext": plaintext}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e

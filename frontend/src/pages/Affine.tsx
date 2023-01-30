@@ -24,12 +24,18 @@ export default function AffinePage() {
   const handleEncrypt = async () => {
     setActionLoading(true)
     if (plaintext && keyM && keyB) {
-      const res = await axios.post(`${BASE_API_URL}/affine/encrypt`, {
-        plaintext,
-        m: keyM,
-        b: keyB
-      })
-      setCiphertext(res.data.ciphertext)
+      try {
+        const res = await axios.post(`${BASE_API_URL}/affine/encrypt`, {
+          plaintext,
+          m: keyM,
+          b: keyB
+        })
+        if (res.data.ciphertext) {
+          setCiphertext(res.data.ciphertext)
+        }
+      } catch (err: any) {
+        message.error(err.response.data.detail || "An error occured when encrypting the data")
+      }
     } else {
       message.warning("Plaintext, m, and b are required")
     }
@@ -39,12 +45,18 @@ export default function AffinePage() {
   const handleDecrypt = async () => {
     setActionLoading(true)
     if (ciphertext && keyM && keyB) {
-      const res = await axios.post(`${BASE_API_URL}/affine/decrypt`, {
-        ciphertext,
-        m: keyM,
-        b: keyB
-      })
-      setPlaintext(res.data.plaintext)
+      try {
+        const res = await axios.post(`${BASE_API_URL}/affine/decrypt`, {
+          ciphertext,
+          m: keyM,
+          b: keyB
+        })
+        if (res.data.plaintext) {
+          setPlaintext(res.data.plaintext)
+        }
+      } catch (err: any) {
+        message.error(err.response.data.detail || "An error occured when decrypting the data")
+      }
     } else {
       message.warning("Ciphertext, m, and b are required")
     }

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { Button, Input, Upload, message, Space } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Button, Input, Upload, message, Space, InputNumber } from 'antd';
 import { UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { BASE_API_URL } from '../constants';
 import { loadFile, saveFile, spacesEvery5Chars, toUppercaseAndFilterAlphabets } from '../utils';
+import MatrixInput from '../components/MatrixInput';
 
 const { TextArea } = Input;
 
@@ -13,26 +14,37 @@ const dummyRequest = async({ onSuccess }: any) => {
    }, 0);
  }
 
-export default function VigenerePage() {
+export default function HillPage() {
   const [plaintext, setPlaintext] = useState<string>("")
-  const [key, setKey] = useState<string>("")
+  const [keySize, setKeySize] = useState<number>(3)
+  const [key, setKey] = useState<number[][]>([])
+  
   const [ciphertext, setCiphertext] = useState<string>("")
 
   const [actionLoading, setActionLoading] = useState<boolean>(false)
+
+  useEffect(() => {
+    let newMatrix = new Array(keySize)
+    for (let i = 0; i < keySize; i++) {
+      newMatrix[i] = new Array(keySize).fill(0)
+    }
+    setKey(newMatrix)
+  }, [keySize])
 
   const handleEncrypt = async () => {
     setActionLoading(true)
     if (plaintext && key) {
       try {
-        const res = await axios.post(`${BASE_API_URL}/vigenere/encrypt`, {
+        const res = await axios.post(`${BASE_API_URL}/hill/encrypt`, {
           plaintext,
           key,
+          m: keySize
         })
         if (res.data.ciphertext) {
           setCiphertext(res.data.ciphertext)
         }
       } catch (err: any) {
-        message.error(err.response.data.error || "An error occured when encrypting the data")
+        message.error(err.response.data.detail || "An error occured when encrypting the data")
       }
     } else {
       message.warning("Plaintext and key are required")
@@ -44,15 +56,16 @@ export default function VigenerePage() {
     setActionLoading(true)
     if (ciphertext && key) {
       try {
-        const res = await axios.post(`${BASE_API_URL}/vigenere/decrypt`, {
+        const res = await axios.post(`${BASE_API_URL}/hill/decrypt`, {
           ciphertext,
           key,
+          m: keySize
         })
         if (res.data.plaintext) {
           setPlaintext(res.data.plaintext)
         }
       } catch (err: any) {
-        message.error(err.response.data.error || "An error occured when decrypting the data")
+        message.error(err.response.data.detail || "An error occured when decrypting the data")
       }
     } else {
       message.warning("Ciphertext and key are required")
@@ -63,7 +76,7 @@ export default function VigenerePage() {
 
   return (
     <main>
-      <h1>Vigenere Cipher</h1>
+      <h1>Hill Cipher</h1>
       <div className="plaintext">
         <div className="title-and-actions">
           <h2>Plaintext</h2>
@@ -109,16 +122,22 @@ export default function VigenerePage() {
       <div className="key">
         <div className="title-and-actions">
           <h2>Key</h2>
+          <Space>
+            <h3>Key size</h3>
+            <InputNumber
+              value={keySize}
+              onChange={
+                (num) => setKeySize(num || 0)
+              }
+            />
+          </Space>
         </div>
-        <Input
-          value={key}
-          onChange={
-            (event) => setKey(
-              toUppercaseAndFilterAlphabets(
-                event.target.value
-              )
-            )
-          }
+        <MatrixInput
+          rows={keySize}
+          columns={keySize}
+          matrix={key}
+          setMatrix={setKey}
+          numbersOnly={true}
         />
       </div>
       <div className="ciphertext">

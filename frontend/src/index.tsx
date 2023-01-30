@@ -8,6 +8,7 @@ import Root from './pages/Root'
 import ErrorPage from './pages/Error';
 import Affine from './pages/Affine';
 import Vigenere from './pages/Vigenere';
+import Hill from './pages/Hill';
 import 'antd/dist/reset.css';
 import './index.scss';
 
@@ -37,7 +38,7 @@ const router = createBrowserRouter([
       element: <h1>Playfair</h1>,
     }, {
       path: "hill",
-      element: <h1>Hill</h1>,
+      element: <Hill />,
     }, {
       path: "enigma",
       element: <h1>Enigma</h1>,
