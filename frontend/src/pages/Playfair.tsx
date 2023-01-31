@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Input, Upload, message, Space, InputNumber } from 'antd';
+import { Button, Input, Upload, message, Space, InputNumber, Drawer, Divider } from 'antd';
 import { UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { BASE_API_URL } from '../constants';
@@ -12,33 +12,59 @@ const dummyRequest = async({ onSuccess }: any) => {
    setTimeout(() => {
       onSuccess("ok");
    }, 0);
- }
+}
+ 
+const ALPHABETS = 'ABCDEFGHIKLMNOPQRSTUVWXYZ'
 
-export default function HillPage() {
+export default function PlayfairPage() {
   const [plaintext, setPlaintext] = useState<string>("")
-  const [keySize, setKeySize] = useState<number>(3)
-  const [key, setKey] = useState<number[][]>([])
+  const [key, setKey] = useState<string[][]>([])
   
   const [ciphertext, setCiphertext] = useState<string>("")
 
   const [actionLoading, setActionLoading] = useState<boolean>(false)
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
+
+  const [sentence, setSentence] = useState<string>("")
 
   useEffect(() => {
-    let newMatrix = new Array(keySize)
-    for (let i = 0; i < keySize; i++) {
-      newMatrix[i] = new Array(keySize).fill(0)
+    let newMatrix = new Array(5)
+    for (let i = 0; i < 5; i++) {
+      newMatrix[i] = new Array(5)
+      for (let j = 0; j < 5; j++) {
+        newMatrix[i][j] = ALPHABETS[(i * 5) + j]
+      }
     }
     setKey(newMatrix)
-  }, [keySize])
+  }, [])
+
+  const handleGenerateKey = async () => {
+    setActionLoading(true)
+    if (sentence) {
+      try {
+        const res = await axios.post(`${BASE_API_URL}/playfair/generate-key`, {
+          sentence,
+        })
+        if (res.data.key) {
+          setKey(res.data.key)
+        }
+      } catch (err: any) {
+        message.error(err.response.data.detail || "An error occured when encrypting the data")
+      }
+    } else {
+      message.warning("Sentence is required")
+    }
+    setDrawerOpen(false)
+    setActionLoading(false)
+  }
 
   const handleEncrypt = async () => {
     setActionLoading(true)
-    if (plaintext && key && keySize) {
+    if (plaintext && key) {
       try {
-        const res = await axios.post(`${BASE_API_URL}/hill/encrypt`, {
+        const res = await axios.post(`${BASE_API_URL}/playfair/encrypt`, {
           plaintext,
           key,
-          m: keySize
         })
         if (res.data.ciphertext) {
           setCiphertext(res.data.ciphertext)
@@ -47,19 +73,18 @@ export default function HillPage() {
         message.error(err.response.data.detail || "An error occured when encrypting the data")
       }
     } else {
-      message.warning("Plaintext, key, and key size are required")
+      message.warning("Plaintext and key are required")
     }
     setActionLoading(false)
   }
 
   const handleDecrypt = async () => {
     setActionLoading(true)
-    if (ciphertext && key && keySize) {
+    if (ciphertext && key) {
       try {
-        const res = await axios.post(`${BASE_API_URL}/hill/decrypt`, {
+        const res = await axios.post(`${BASE_API_URL}/playfair/decrypt`, {
           ciphertext,
           key,
-          m: keySize
         })
         if (res.data.plaintext) {
           setPlaintext(res.data.plaintext)
@@ -68,7 +93,7 @@ export default function HillPage() {
         message.error(err.response.data.detail || "An error occured when decrypting the data")
       }
     } else {
-      message.warning("Ciphertext, key, and key size are required")
+      message.warning("Ciphertext and key are required")
     }
     
     setActionLoading(false)
@@ -76,7 +101,7 @@ export default function HillPage() {
 
   return (
     <main>
-      <h1>Hill Cipher</h1>
+      <h1>Playfair Cipher</h1>
       <div className="plaintext">
         <div className="title-and-actions">
           <h2>Plaintext</h2>
@@ -123,21 +148,21 @@ export default function HillPage() {
         <div className="title-and-actions">
           <h2>Key</h2>
           <Space>
-            <h3>Key size</h3>
-            <InputNumber
-              value={keySize}
-              onChange={
-                (num) => setKeySize(num || 0)
+            <Button
+              onClick={() =>
+                setDrawerOpen(true)
               }
-            />
+            >
+              Generate key from sentence
+            </Button>
           </Space>
         </div>
         <MatrixInput
-          rows={keySize}
-          columns={keySize}
+          rows={5}
+          columns={5}
           matrix={key}
           setMatrix={setKey}
-          numbersOnly={true}
+          numbersOnly={false}
         />
       </div>
       <div className="ciphertext">
@@ -207,6 +232,29 @@ export default function HillPage() {
           </Button>
         </Space>
       </div>
+      <Drawer
+        title="Generate Key"
+        placement="right"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      >
+        <Space direction='vertical'>
+          <Input
+            value={sentence}
+            onChange={
+              (event) => setSentence(event.target.value)
+            }
+            width="100%"
+          />
+          <Button
+            type="primary"
+            onClick={handleGenerateKey}
+            loading={actionLoading}
+          >
+              Generate key
+          </Button>
+        </Space>
+      </Drawer>
     </main>
   )
 }

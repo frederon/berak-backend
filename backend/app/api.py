@@ -3,7 +3,7 @@ from typing import List
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
-from . import vigenere, affine, hill, utils
+from . import vigenere, affine, hill, playfair, utils
 
 app = FastAPI()
 
@@ -167,5 +167,84 @@ async def hill_decrypt(body: HillDecryptRequest) -> dict:
     try:
         plaintext = hill.decrypt(body.ciphertext, body.key, body.m)
         return {"plaintext": plaintext}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+class PlayfairEncryptRequest(BaseModel):
+    plaintext: str
+    key: List[List[str]]
+
+    @validator('plaintext')
+    def validate_plaintext(cls, plaintext):
+        return utils.uppercase_and_filter_alphabets(plaintext)
+
+    @validator('key')
+    def validate_key(cls, key):
+        for row in key:
+            for ch in row:
+                if len(ch) > 1:
+                    raise HTTPException(
+                        status_code=400, detail='Key matrix is not a char matrix')
+        return key
+
+
+class PlayfairEncryptResponse(BaseModel):
+    ciphertext: str
+
+
+@app.post("/playfair/encrypt", tags=["playfair"], response_model=PlayfairEncryptResponse)
+async def playfair_encrypt(body: PlayfairEncryptRequest) -> dict:
+    try:
+        ciphertext = playfair.encrypt(body.plaintext, body.key)
+        return {"ciphertext": ciphertext}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+class PlayfairDecryptRequest(BaseModel):
+    ciphertext: str
+    key: List[List[str]]
+
+    @validator('ciphertext')
+    def validate_ciphertext(cls, ciphertext):
+        return utils.uppercase_and_filter_alphabets(ciphertext)
+
+    @validator('key')
+    def validate_key(cls, key):
+        for row in key:
+            for ch in row:
+                if len(ch) > 1:
+                    raise HTTPException(
+                        status_code=400, detail='Key matrix is not a char matrix')
+        return key
+
+
+class PlayfairDecryptResponse(BaseModel):
+    plaintext: str
+
+
+@app.post("/playfair/decrypt", tags=["playfair"], response_model=PlayfairDecryptResponse)
+async def playfair_decrypt(body: PlayfairDecryptRequest) -> dict:
+    try:
+        plaintext = playfair.decrypt(body.ciphertext, body.key)
+        return {"plaintext": plaintext}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+class PlayfairGenerateKeyRequest(BaseModel):
+    sentence: str
+
+
+class PlayfairGenerateKeyResponse(BaseModel):
+    key: List[List[str]]
+
+
+@app.post("/playfair/generate-key", tags=["playfair"], response_model=PlayfairGenerateKeyResponse)
+async def playfair_generate_key(body: PlayfairGenerateKeyRequest) -> dict:
+    try:
+        key = playfair.generate_key(body.sentence)
+        return {"key": key}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
