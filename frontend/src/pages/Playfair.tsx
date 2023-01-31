@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Input, Upload, message, Space, InputNumber, Drawer, Divider } from 'antd';
+import { Button, Input, Upload, message, Space, Drawer } from 'antd';
 import { UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { BASE_API_URL } from '../constants';
