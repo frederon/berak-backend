@@ -3,7 +3,7 @@ from typing import List
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
-from . import vigenere, affine, hill, playfair, utils
+from . import vigenere, vigenere_auto, affine, hill, playfair, utils
 
 app = FastAPI()
 
@@ -74,6 +74,24 @@ class VigenereDecryptResponse(BaseModel):
 async def vigenere_decrypt(body: VigenereDecryptRequest) -> dict:
     try:
         plaintext = vigenere.decrypt(body.ciphertext, body.key)
+        return {"plaintext": plaintext}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@app.post("/vigenere-auto/encrypt", tags=["vigenere"], response_model=VigenereEncryptResponse)
+async def vigenere_auto_encrypt(body: VigenereEncryptRequest) -> dict:
+    try:
+        ciphertext = vigenere_auto.encrypt(body.plaintext, body.key)
+        return {"ciphertext": ciphertext}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@app.post("/vigenere-auto/decrypt", tags=["vigenere"], response_model=VigenereDecryptResponse)
+async def vigenere_auto_decrypt(body: VigenereDecryptRequest) -> dict:
+    try:
+        plaintext = vigenere_auto.decrypt(body.ciphertext, body.key)
         return {"plaintext": plaintext}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
