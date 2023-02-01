@@ -1,9 +1,9 @@
 # pylint: disable=no-self-argument,no-self-use,broad-except
-from typing import List
-from fastapi import FastAPI, HTTPException
+from typing import Any, List
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
-from . import vigenere, vigenere_auto, affine, hill, playfair, utils
+from . import vigenere, vigenere_auto, vigenere_extended, affine, hill, playfair, utils
 
 app = FastAPI()
 
@@ -93,6 +93,50 @@ async def vigenere_auto_decrypt(body: VigenereDecryptRequest) -> dict:
     try:
         plaintext = vigenere_auto.decrypt(body.ciphertext, body.key)
         return {"plaintext": plaintext}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+class VigenereExtendedEncryptRequest(BaseModel):
+    plaintext: bytes
+    key: str
+
+    @validator('key')
+    def validate_key(cls, key):
+        return utils.uppercase_and_filter_alphabets(key)
+
+
+@app.post("/vigenere-extended/encrypt", tags=["vigenere"])
+async def vigenere_extended_encrypt(body: VigenereExtendedEncryptRequest) -> dict:
+    try:
+        ciphertext = vigenere_extended.encrypt_extended_vigenere(
+            body.plaintext, body.key)
+        return Response(
+            status_code=200,
+            content=ciphertext,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+class VigenereExtendedDecryptRequest(BaseModel):
+    ciphertext: bytes
+    key: str
+
+    @validator('key')
+    def validate_key(cls, key):
+        return utils.uppercase_and_filter_alphabets(key)
+
+
+@app.post("/vigenere-extended/decrypt", tags=["vigenere"])
+async def vigenere_extended_decrypt(body: VigenereExtendedDecryptRequest) -> dict:
+    try:
+        plaintext = vigenere_extended.decrypt_extended_vigenere(
+            body.ciphertext, body.key)
+        return Response(
+            status_code=200,
+            content=str(plaintext),
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

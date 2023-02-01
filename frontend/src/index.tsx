@@ -9,6 +9,7 @@ import ErrorPage from './pages/Error';
 import Affine from './pages/Affine';
 import Vigenere from './pages/Vigenere';
 import VigenereAuto from './pages/Vigenere_Auto';
+import VigenereExtended from './pages/Vigenere_Extended';
 import Hill from './pages/Hill';
 import Playfair from './pages/Playfair';
 import 'antd/dist/reset.css';
@@ -31,7 +32,7 @@ const router = createBrowserRouter([
       element: <VigenereAuto />,
     }, {
       path: "vigenere_extended",
-      element: <h1>Vigenere Extended</h1>,
+      element: <VigenereExtended />,
     }, {
       path: "affine",
       element: <Affine />,

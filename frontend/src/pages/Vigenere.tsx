@@ -32,7 +32,7 @@ export default function VigenerePage() {
           setCiphertext(res.data.ciphertext)
         }
       } catch (err: any) {
-        message.error(err.response.data.error || "An error occured when encrypting the data")
+        message.error(err.response.data.detail || "An error occured when encrypting the data")
       }
     } else {
       message.warning("Plaintext and key are required")
@@ -52,7 +52,7 @@ export default function VigenerePage() {
           setPlaintext(res.data.plaintext)
         }
       } catch (err: any) {
-        message.error(err.response.data.error || "An error occured when decrypting the data")
+        message.error(err.response.data.detail || "An error occured when decrypting the data")
       }
     } else {
       message.warning("Ciphertext and key are required")

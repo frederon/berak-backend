@@ -3,7 +3,7 @@ import { Button, Input, Upload, message, Space } from 'antd';
 import { UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { BASE_API_URL } from '../constants';
-import { loadFile, saveFile, spacesEvery5Chars, toUppercaseAndFilterAlphabets } from '../utils';
+import { loadFile, saveFile, toUppercaseAndFilterAlphabets } from '../utils';
 
 const { TextArea } = Input;
 
@@ -13,10 +13,10 @@ const dummyRequest = async({ onSuccess }: any) => {
    }, 0);
  }
 
-export default function VigenereAutoPage() {
-  const [plaintext, setPlaintext] = useState<string>("")
+export default function VigenereExtendedPage() {
+  const [plaintext, setPlaintext] = useState<ArrayBuffer>(new ArrayBuffer(1))
   const [key, setKey] = useState<string>("")
-  const [ciphertext, setCiphertext] = useState<string>("")
+  const [ciphertext, setCiphertext] = useState<ArrayBuffer>(new ArrayBuffer(1))
 
   const [actionLoading, setActionLoading] = useState<boolean>(false)
 
@@ -24,12 +24,19 @@ export default function VigenereAutoPage() {
     setActionLoading(true)
     if (plaintext && key) {
       try {
-        const res = await axios.post(`${BASE_API_URL}/vigenere-auto/encrypt`, {
+        const res = await axios.post(`${BASE_API_URL}/vigenere-extended/encrypt`, {
           plaintext,
           key,
         })
-        if (res.data.ciphertext) {
-          setCiphertext(res.data.ciphertext)
+        if (res.data) {
+          console.log("plaintext")
+          console.log(plaintext)
+          console.log(typeof(plaintext))
+          console.log("ciphertext")
+          console.log(res.data)
+          console.log(typeof (res.data))
+          
+          setCiphertext(res.data)
         }
       } catch (err: any) {
         message.error(err.response.data.detail || "An error occured when encrypting the data")
@@ -44,12 +51,17 @@ export default function VigenereAutoPage() {
     setActionLoading(true)
     if (ciphertext && key) {
       try {
-        const res = await axios.post(`${BASE_API_URL}/vigenere-auto/decrypt`, {
+        const res = await axios.post(`${BASE_API_URL}/vigenere-extended/decrypt`, {
           ciphertext,
           key,
         })
-        if (res.data.plaintext) {
-          setPlaintext(res.data.plaintext)
+        if (res.data) {
+          console.log("plaintext")
+          console.log(res.data)
+          console.log("ciphertext")
+          console.log(ciphertext)
+
+          setPlaintext(res.data)
         }
       } catch (err: any) {
         message.error(err.response.data.detail || "An error occured when decrypting the data")
@@ -63,48 +75,36 @@ export default function VigenereAutoPage() {
 
   return (
     <main>
-      <h1>Auto-Key Vigenere Cipher</h1>
+      <h1>Extended Vigenere Cipher</h1>
       <div className="plaintext">
         <div className="title-and-actions">
           <h2>Plaintext</h2>
           <Space>
             <Upload
-              onChange={(info) => loadFile(info, setPlaintext, message.error)}
-              accept="text/*"
+              onChange={(info) => loadFile(info, setPlaintext, message.error, true)}
+              accept="*"
               customRequest={dummyRequest}
-              showUploadList={false}
+              showUploadList={true}
               multiple={false}
               maxCount={1}
             >
               <Button icon={<UploadOutlined />}>Load from file</Button>
             </Upload>
             <Button
-              onClick={() =>
-                setPlaintext(
-                  toUppercaseAndFilterAlphabets(plaintext)
-                )
-              }
+              icon={<DownloadOutlined />}
+              onClick={() => saveFile(plaintext, 'vigenere.txt')}
             >
-              Format plaintext
-            </Button>
-            <Button
-              onClick={() =>
-                setPlaintext(
-                  spacesEvery5Chars(plaintext)
-                )
-              }
-            >
-              Group every 5 characters
+              Save to file
             </Button>
           </Space>
         </div>
-        <TextArea
+        {/* <TextArea
           rows={6}
           value={plaintext}
           onChange={
             (event) => setPlaintext(event.target.value)
           }
-        />
+        /> */}
       </div>
       <div className="key">
         <div className="title-and-actions">
@@ -126,10 +126,10 @@ export default function VigenereAutoPage() {
           <h2>Ciphertext</h2>
           <Space>
             <Upload
-              onChange={(info) => loadFile(info, setCiphertext, message.error)}
-              accept="text/*"
+              onChange={(info) => loadFile(info, setCiphertext, message.error, true)}
+              accept="*"
               customRequest={dummyRequest}
-              showUploadList={false}
+              showUploadList={true}
               multiple={false}
               maxCount={1}
             >
@@ -141,33 +141,15 @@ export default function VigenereAutoPage() {
             >
               Save to file
             </Button>
-            <Button
-              onClick={() =>
-                setCiphertext(
-                  toUppercaseAndFilterAlphabets(ciphertext)
-                )
-              }
-            >
-              Format ciphertext
-            </Button>
-            <Button
-              onClick={() =>
-                setCiphertext(
-                  spacesEvery5Chars(ciphertext)
-                )
-              }
-            >
-              Group every 5 characters
-            </Button>
           </Space>
         </div>
-        <TextArea
+        {/* <TextArea
           rows={6}
           value={ciphertext}
           onChange={
             (event) => setCiphertext(event.target.value)
           }
-        />
+        /> */}
       </div>
       <div className="actions">
         <Space>
