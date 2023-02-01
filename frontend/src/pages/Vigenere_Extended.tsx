@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { Button, Input, Upload, message, Space } from 'antd';
-import { UploadOutlined, DownloadOutlined } from '@ant-design/icons';
+import { UploadOutlined, DownloadOutlined, ClearOutlined } from '@ant-design/icons';
+import FormData from 'form-data';
 import axios from 'axios';
 import { BASE_API_URL } from '../constants';
 import { loadFile, saveFile, toUppercaseAndFilterAlphabets } from '../utils';
-
-const { TextArea } = Input;
 
 const dummyRequest = async({ onSuccess }: any) => {   
    setTimeout(() => {
@@ -14,9 +13,9 @@ const dummyRequest = async({ onSuccess }: any) => {
  }
 
 export default function VigenereExtendedPage() {
-  const [plaintext, setPlaintext] = useState<ArrayBuffer>(new ArrayBuffer(1))
+  const [plaintext, setPlaintext] = useState<ArrayBuffer>(new ArrayBuffer(0))
   const [key, setKey] = useState<string>("")
-  const [ciphertext, setCiphertext] = useState<ArrayBuffer>(new ArrayBuffer(1))
+  const [ciphertext, setCiphertext] = useState<ArrayBuffer>(new ArrayBuffer(0))
 
   const [actionLoading, setActionLoading] = useState<boolean>(false)
 
@@ -24,18 +23,19 @@ export default function VigenereExtendedPage() {
     setActionLoading(true)
     if (plaintext && key) {
       try {
-        const res = await axios.post(`${BASE_API_URL}/vigenere-extended/encrypt`, {
-          plaintext,
-          key,
+        const form = new FormData()
+        form.append('plainfile', new Blob([plaintext]))
+        form.append('key', key)
+
+        const res = await axios.post(`${BASE_API_URL}/vigenere-extended/encrypt`, form, {
+          headers: {
+            'Accept': 'application/octet-stream',
+            'Content-Type': 'multipart/form-data'
+          },
+          responseType: 'arraybuffer'
         })
-        if (res.data) {
-          console.log("plaintext")
-          console.log(plaintext)
-          console.log(typeof(plaintext))
-          console.log("ciphertext")
-          console.log(res.data)
-          console.log(typeof (res.data))
-          
+
+        if (res.data) {          
           setCiphertext(res.data)
         }
       } catch (err: any) {
@@ -51,16 +51,18 @@ export default function VigenereExtendedPage() {
     setActionLoading(true)
     if (ciphertext && key) {
       try {
-        const res = await axios.post(`${BASE_API_URL}/vigenere-extended/decrypt`, {
-          ciphertext,
-          key,
-        })
-        if (res.data) {
-          console.log("plaintext")
-          console.log(res.data)
-          console.log("ciphertext")
-          console.log(ciphertext)
+        const form = new FormData()
+        form.append('cipherfile', new Blob([ciphertext]))
+        form.append('key', key)
 
+        const res = await axios.post(`${BASE_API_URL}/vigenere-extended/decrypt`, form, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          },
+          responseType: 'arraybuffer'
+        })
+
+        if (res.data) {
           setPlaintext(res.data)
         }
       } catch (err: any) {
@@ -78,33 +80,34 @@ export default function VigenereExtendedPage() {
       <h1>Extended Vigenere Cipher</h1>
       <div className="plaintext">
         <div className="title-and-actions">
-          <h2>Plaintext</h2>
-          <Space>
-            <Upload
-              onChange={(info) => loadFile(info, setPlaintext, message.error, true)}
-              accept="*"
-              customRequest={dummyRequest}
-              showUploadList={true}
-              multiple={false}
-              maxCount={1}
-            >
-              <Button icon={<UploadOutlined />}>Load from file</Button>
-            </Upload>
-            <Button
-              icon={<DownloadOutlined />}
-              onClick={() => saveFile(plaintext, 'vigenere.txt')}
-            >
-              Save to file
-            </Button>
-          </Space>
+          <h2>Plainfile</h2>
         </div>
-        {/* <TextArea
-          rows={6}
-          value={plaintext}
-          onChange={
-            (event) => setPlaintext(event.target.value)
-          }
-        /> */}
+        <Space direction='vertical'>
+          <Upload
+            onChange={(info) => loadFile(info, setPlaintext, message.error, true)}
+            accept="*"
+            customRequest={dummyRequest}
+            showUploadList={false}
+            multiple={false}
+            maxCount={1}
+          >
+            <Button icon={<UploadOutlined />}>Load from file</Button>
+          </Upload>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={() => saveFile(plaintext, 'vigenere_extended')}
+            disabled={plaintext.byteLength === 0}
+          >
+            Save to file
+          </Button>
+          <Button
+            icon={<ClearOutlined />}
+            onClick={() => setPlaintext(new ArrayBuffer(0))}
+            disabled={plaintext.byteLength === 0}
+          >
+            Clear file
+          </Button>
+        </Space>
       </div>
       <div className="key">
         <div className="title-and-actions">
@@ -123,33 +126,34 @@ export default function VigenereExtendedPage() {
       </div>
       <div className="ciphertext">
         <div className="title-and-actions">
-          <h2>Ciphertext</h2>
-          <Space>
-            <Upload
-              onChange={(info) => loadFile(info, setCiphertext, message.error, true)}
-              accept="*"
-              customRequest={dummyRequest}
-              showUploadList={true}
-              multiple={false}
-              maxCount={1}
-            >
-              <Button icon={<UploadOutlined />}>Load from file</Button>
-            </Upload>
-            <Button
-              icon={<DownloadOutlined />}
-              onClick={() => saveFile(ciphertext, 'vigenere.txt')}
-            >
-              Save to file
-            </Button>
-          </Space>
+          <h2>Cipherfile</h2>
         </div>
-        {/* <TextArea
-          rows={6}
-          value={ciphertext}
-          onChange={
-            (event) => setCiphertext(event.target.value)
-          }
-        /> */}
+        <Space direction='vertical'>
+          <Upload
+            onChange={(info) => loadFile(info, setCiphertext, message.error, true)}
+            accept="*"
+            customRequest={dummyRequest}
+            showUploadList={false}
+            multiple={false}
+            maxCount={1}
+          >
+            <Button icon={<UploadOutlined />}>Load from file</Button>
+          </Upload>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={() => saveFile(ciphertext, 'vigenere_extended')}
+            disabled={ciphertext.byteLength === 0}
+          >
+            Save to file
+          </Button>
+          <Button
+            icon={<ClearOutlined />}
+            onClick={() => setCiphertext(new ArrayBuffer(0))}
+            disabled={ciphertext.byteLength === 0}
+          >
+            Clear file
+          </Button>
+        </Space>
       </div>
       <div className="actions">
         <Space>

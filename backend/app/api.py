@@ -1,8 +1,10 @@
 # pylint: disable=no-self-argument,no-self-use,broad-except
-from typing import Any, List
-from fastapi import FastAPI, HTTPException, Response
+from typing import List
+from fastapi import FastAPI, HTTPException, Response, Form, File, UploadFile
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
+from io import BytesIO
 from . import vigenere, vigenere_auto, vigenere_extended, affine, hill, playfair, utils
 
 app = FastAPI()
@@ -97,45 +99,35 @@ async def vigenere_auto_decrypt(body: VigenereDecryptRequest) -> dict:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-class VigenereExtendedEncryptRequest(BaseModel):
-    plaintext: bytes
-    key: str
-
-    @validator('key')
-    def validate_key(cls, key):
-        return utils.uppercase_and_filter_alphabets(key)
-
-
 @app.post("/vigenere-extended/encrypt", tags=["vigenere"])
-async def vigenere_extended_encrypt(body: VigenereExtendedEncryptRequest) -> dict:
+async def vigenere_extended_encrypt(plainfile: UploadFile = File(), key: str = Form()) -> dict:
     try:
-        ciphertext = vigenere_extended.encrypt_extended_vigenere(
-            body.plaintext, body.key)
-        return Response(
+        contents = plainfile.file.read()
+        ciphertext = vigenere_extended.encrypt(contents, key)
+        ciphertext_file = BytesIO()
+        ciphertext_file.write(ciphertext)
+        ciphertext_file.seek(0)
+        return StreamingResponse(
             status_code=200,
-            content=ciphertext,
+            content=ciphertext_file,
+            media_type="application/octet-stream"
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-class VigenereExtendedDecryptRequest(BaseModel):
-    ciphertext: bytes
-    key: str
-
-    @validator('key')
-    def validate_key(cls, key):
-        return utils.uppercase_and_filter_alphabets(key)
-
-
 @app.post("/vigenere-extended/decrypt", tags=["vigenere"])
-async def vigenere_extended_decrypt(body: VigenereExtendedDecryptRequest) -> dict:
+async def vigenere_extended_decrypt(cipherfile: UploadFile = File(), key: str = Form()) -> dict:
     try:
-        plaintext = vigenere_extended.decrypt_extended_vigenere(
-            body.ciphertext, body.key)
-        return Response(
+        contents = cipherfile.file.read()
+        plaintext = vigenere_extended.decrypt(contents, key)
+        plaintext_file = BytesIO()
+        plaintext_file.write(plaintext)
+        plaintext_file.seek(0)
+        return StreamingResponse(
             status_code=200,
-            content=str(plaintext),
+            content=plaintext_file,
+            media_type="application/octet-stream"
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
