@@ -13,18 +13,18 @@ const dummyRequest = async({ onSuccess }: any) => {
  }
 
 export default function VigenereExtendedPage() {
-  const [plaintext, setPlaintext] = useState<ArrayBuffer>(new ArrayBuffer(0))
+  const [plainfile, setPlainfile] = useState<ArrayBuffer>(new ArrayBuffer(0))
   const [key, setKey] = useState<string>("")
-  const [ciphertext, setCiphertext] = useState<ArrayBuffer>(new ArrayBuffer(0))
+  const [cipherfile, setCipherfile] = useState<ArrayBuffer>(new ArrayBuffer(0))
 
   const [actionLoading, setActionLoading] = useState<boolean>(false)
 
   const handleEncrypt = async () => {
     setActionLoading(true)
-    if (plaintext && key) {
+    if (plainfile && key) {
       try {
         const form = new FormData()
-        form.append('plainfile', new Blob([plaintext]))
+        form.append('plainfile', new Blob([plainfile]))
         form.append('key', key)
 
         const res = await axios.post(`${BASE_API_URL}/vigenere-extended/encrypt`, form, {
@@ -36,23 +36,23 @@ export default function VigenereExtendedPage() {
         })
 
         if (res.data) {          
-          setCiphertext(res.data)
+          setCipherfile(res.data)
         }
       } catch (err: any) {
         message.error(err.response.data.detail || "An error occured when encrypting the data")
       }
     } else {
-      message.warning("Plaintext and key are required")
+      message.warning("Plainfile and key are required")
     }
     setActionLoading(false)
   }
 
   const handleDecrypt = async () => {
     setActionLoading(true)
-    if (ciphertext && key) {
+    if (cipherfile && key) {
       try {
         const form = new FormData()
-        form.append('cipherfile', new Blob([ciphertext]))
+        form.append('cipherfile', new Blob([cipherfile]))
         form.append('key', key)
 
         const res = await axios.post(`${BASE_API_URL}/vigenere-extended/decrypt`, form, {
@@ -63,13 +63,13 @@ export default function VigenereExtendedPage() {
         })
 
         if (res.data) {
-          setPlaintext(res.data)
+          setPlainfile(res.data)
         }
       } catch (err: any) {
         message.error(err.response.data.detail || "An error occured when decrypting the data")
       }
     } else {
-      message.warning("Ciphertext and key are required")
+      message.warning("Cipherfile and key are required")
     }
     
     setActionLoading(false)
@@ -84,7 +84,7 @@ export default function VigenereExtendedPage() {
         </div>
         <Space direction='vertical'>
           <Upload
-            onChange={(info) => loadFile(info, setPlaintext, message.error, true)}
+            onChange={(info) => loadFile(info, setPlainfile, message.error, true)}
             accept="*"
             customRequest={dummyRequest}
             showUploadList={false}
@@ -95,15 +95,15 @@ export default function VigenereExtendedPage() {
           </Upload>
           <Button
             icon={<DownloadOutlined />}
-            onClick={() => saveFile(plaintext, 'vigenere_extended')}
-            disabled={plaintext.byteLength === 0}
+            onClick={() => saveFile(plainfile, 'vigenere_extended')}
+            disabled={plainfile.byteLength === 0}
           >
             Save to file
           </Button>
           <Button
             icon={<ClearOutlined />}
-            onClick={() => setPlaintext(new ArrayBuffer(0))}
-            disabled={plaintext.byteLength === 0}
+            onClick={() => setPlainfile(new ArrayBuffer(0))}
+            disabled={plainfile.byteLength === 0}
           >
             Clear file
           </Button>
@@ -130,7 +130,7 @@ export default function VigenereExtendedPage() {
         </div>
         <Space direction='vertical'>
           <Upload
-            onChange={(info) => loadFile(info, setCiphertext, message.error, true)}
+            onChange={(info) => loadFile(info, setCipherfile, message.error, true)}
             accept="*"
             customRequest={dummyRequest}
             showUploadList={false}
@@ -141,15 +141,15 @@ export default function VigenereExtendedPage() {
           </Upload>
           <Button
             icon={<DownloadOutlined />}
-            onClick={() => saveFile(ciphertext, 'vigenere_extended')}
-            disabled={ciphertext.byteLength === 0}
+            onClick={() => saveFile(cipherfile, 'vigenere_extended')}
+            disabled={cipherfile.byteLength === 0}
           >
             Save to file
           </Button>
           <Button
             icon={<ClearOutlined />}
-            onClick={() => setCiphertext(new ArrayBuffer(0))}
-            disabled={ciphertext.byteLength === 0}
+            onClick={() => setCipherfile(new ArrayBuffer(0))}
+            disabled={cipherfile.byteLength === 0}
           >
             Clear file
           </Button>

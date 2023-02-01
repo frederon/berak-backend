@@ -157,6 +157,7 @@ export default function HillPage() {
             <Button
               icon={<DownloadOutlined />}
               onClick={() => saveFile(ciphertext, 'vigenere.txt')}
+              disabled={ciphertext.length === 0}
             >
               Save to file
             </Button>
