@@ -1,11 +1,11 @@
 # pylint: disable=no-self-argument,no-self-use,broad-except
-from typing import List
+from typing import Dict, List
 from fastapi import FastAPI, HTTPException, Response, Form, File, UploadFile
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
 from io import BytesIO
-from . import vigenere, vigenere_auto, vigenere_extended, affine, hill, playfair, utils
+from . import vigenere, vigenere_auto, vigenere_extended, affine, hill, playfair, enigma, utils
 
 app = FastAPI()
 
@@ -300,5 +300,137 @@ async def playfair_generate_key(body: PlayfairGenerateKeyRequest) -> dict:
     try:
         key = playfair.generate_key(body.sentence)
         return {"key": key}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+class EnigmaEncryptRequest(BaseModel):
+    plaintext: str
+    rotors: List[int]
+    positions: List[int]
+    rings: List[int]
+    plugboard: Dict[str, str]
+
+    @validator('plaintext')
+    def validate_plaintext(cls, plaintext):
+        return utils.uppercase_and_filter_alphabets(plaintext)
+
+    @validator('rotors')
+    def validate_rotors(cls, rotors):
+        result = []
+        for rotor in rotors:
+            if rotor < 4:
+                result.append(enigma.EnigmaRotor(rotor))
+            else:
+                raise HTTPException(
+                    status_code=400, detail='Currently only support 4 enigma rotors')
+        return result
+
+    @validator('positions')
+    def validate_positions(cls, positions):
+        for pos in positions:
+            if pos > 25 or pos < 0:
+                raise HTTPException(
+                    status_code=400, detail='Invalid positions')
+        return positions
+
+    @validator('rings')
+    def validate_rings(cls, rings):
+        for ring in rings:
+            if ring > 25 or ring < 0:
+                raise HTTPException(
+                    status_code=400, detail='Invalid rings')
+        return rings
+
+    @validator('plugboard')
+    def validate_plugboard(cls, plugboard):
+        for key, value in plugboard.items():
+            if len(key) != 1 or len(value) != 1:
+                raise HTTPException(
+                    status_code=400, detail='Invalid plugboard')
+        return plugboard
+
+
+class EnigmaEncryptResponse(BaseModel):
+    ciphertext: str
+
+
+@app.post("/enigma/encrypt", tags=["enigma"], response_model=EnigmaEncryptResponse)
+async def enigma_encrypt(body: EnigmaEncryptRequest) -> dict:
+    try:
+        encryptor = enigma.EnigmaMachine(
+            body.rotors,
+            body.positions,
+            body.rings,
+            body.plugboard
+        )
+        ciphertext = encryptor.encrypt(body.plaintext)
+        return {"ciphertext": ciphertext}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+class EnigmaDecryptRequest(BaseModel):
+    ciphertext: str
+    rotors: List[int]
+    positions: List[int]
+    rings: List[int]
+    plugboard: Dict[str, str]
+
+    @validator('ciphertext')
+    def validate_ciphertext(cls, ciphertext):
+        return utils.uppercase_and_filter_alphabets(ciphertext)
+
+    @validator('rotors')
+    def validate_rotors(cls, rotors):
+        result = []
+        for rotor in rotors:
+            if rotor < 4:
+                result.append(enigma.EnigmaRotor(rotor))
+            else:
+                raise HTTPException(
+                    status_code=400, detail='Currently only support 4 enigma rotors')
+        return result
+
+    @validator('positions')
+    def validate_positions(cls, positions):
+        for pos in positions:
+            if pos > 25 or pos < 0:
+                raise HTTPException(
+                    status_code=400, detail='Invalid positions')
+        return positions
+
+    @validator('rings')
+    def validate_rings(cls, rings):
+        for ring in rings:
+            if ring > 25 or ring < 0:
+                raise HTTPException(
+                    status_code=400, detail='Invalid rings')
+        return rings
+
+    @validator('plugboard')
+    def validate_plugboard(cls, plugboard):
+        for key, value in plugboard.items():
+            if len(key) != 1 or len(value) != 1:
+                raise HTTPException(
+                    status_code=400, detail='Invalid plugboard')
+        return plugboard
+
+
+class EnigmaDecryptResponse(BaseModel):
+    plaintext: str
+
+
+@app.post("/enigma/decrypt", tags=["enigma"], response_model=EnigmaDecryptResponse)
+async def enigma_decrypt(body: EnigmaDecryptRequest) -> dict:
+    try:
+        decryptor = enigma.EnigmaMachine(
+            body.rotors,
+            body.positions,
+            body.rings,
+            body.plugboard
+        )
+        plaintext = decryptor.encrypt(body.ciphertext)
+        return {"plaintext": plaintext}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

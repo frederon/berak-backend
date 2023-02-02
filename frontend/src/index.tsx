@@ -12,6 +12,7 @@ import VigenereAuto from './pages/Vigenere_Auto';
 import VigenereExtended from './pages/Vigenere_Extended';
 import Hill from './pages/Hill';
 import Playfair from './pages/Playfair';
+import Enigma from './pages/Enigma';
 import 'antd/dist/reset.css';
 import './index.scss';
 
@@ -44,7 +45,7 @@ const router = createBrowserRouter([
       element: <Hill />,
     }, {
       path: "enigma",
-      element: <h1>Enigma</h1>,
+      element: <Enigma />,
     }]
   },
 ]);
