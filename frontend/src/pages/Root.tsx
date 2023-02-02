@@ -8,6 +8,9 @@ export default function Root() {
         <nav>
           <ul>
             <li>
+              <Link to={`/`}>Home</Link>
+            </li>
+            <li>
               <Link to={`/vigenere`}>Vigenere Cipher</Link>
             </li>
             <li>

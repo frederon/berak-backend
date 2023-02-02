@@ -4,6 +4,7 @@ import {
   createBrowserRouter,
   RouterProvider,
 } from "react-router-dom";
+import Main from './pages/Main'
 import Root from './pages/Root'
 import ErrorPage from './pages/Error';
 import Affine from './pages/Affine';
@@ -26,6 +27,9 @@ const router = createBrowserRouter([
     element: <Root />,
     errorElement: <ErrorPage />,
     children: [{
+      path: "/",
+      element: <Main />
+    }, {
       path: "vigenere",
       element: <Vigenere />,
     }, {
