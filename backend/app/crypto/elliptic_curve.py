@@ -1,6 +1,7 @@
 from typing import NamedTuple, Optional
 import secrets
 import hashlib
+import random
 
 class Point(NamedTuple):
     x: int
@@ -130,17 +131,26 @@ def verify(public_key: str, signature: Signature, hash_digest: int):
     # check x coordinate of this point matches the x-coordinate of the random point given
     return point3.x == signature.r
 
-private_key = "f94a840f1e1a901843a75dd07ffcc5c84478dc4f987797474c9393ac53ab55e6"
+# ------
+# Generate private ECDSA key
+# ------
+def gen_ecdsa_private_key() -> str:
+    return hex(random.randint(1, n-1))[2:]
+
+# ------
+# Calculate public ECDSA key and return the uncompressed public key string
+# ------
+def gen_ecdsa_public_key(private_key: str) -> str:
+    pubkey_point = multiply(int(private_key, 16))
+    # convert x and y values of the public key point to hexadecimal
+    x = hex(pubkey_point.x)[2:].rjust(64, "0") # pad with zeros to make sure it's 64 characters (32 bytes)
+    y = hex(pubkey_point.y)[2:].rjust(64, "0")
+    return "04" + x + y
+
+private_key = gen_ecdsa_private_key()
 
 # Public key is the generator point multiplied by the private key
-point = multiply(int(private_key, 16))
-
-# convert x and y values of the public key point to hexadecimal
-x = hex(point.x)[2:].rjust(64, "0") # pad with zeros to make sure it's 64 characters (32 bytes)
-y = hex(point.y)[2:].rjust(64, "0")
-
-# uncompressed public key (use full x and y coordinates) OLD FORMAT!
-public_key_uncompressed = "04" + x + y
+public_key_uncompressed = gen_ecdsa_public_key(private_key)
 
 print(public_key_uncompressed)
 
@@ -152,7 +162,7 @@ signature = sign(int(private_key, 16), hash_digest, 12345678)
 # should be true
 print(verify(public_key_uncompressed, signature, hash_digest))
 
-wrong_public_key_uncompressed = "04" + y + y
+wrong_public_key_uncompressed = "04" + "0" * 128
 
 # should be false
 print(verify(wrong_public_key_uncompressed, signature, hash_digest))
