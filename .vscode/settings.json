@@ -6,6 +6,7 @@
     "--disable=missing-class-docstring",
     "--disable=missing-function-docstring",
     "--disable=invalid-name",
-    "--disable=consider-using-enumerate"
+    "--disable=consider-using-enumerate",
+    "--disable=line-too-long"
   ]
 }
