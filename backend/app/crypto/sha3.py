@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import NamedTuple
 
 # reference: https://keccak.team/keccak_specs_summary.html
 
@@ -9,11 +8,30 @@ class SHA3Instance(Enum):
     SHA384 = 2
     SHA512 = 3
 
-class SHA3Specification(NamedTuple):
+class SHA3Specification():
     r: int
     c: int
     output_length: int
-    mbits: str
+    mbits: list[int]
+
+    b: int
+    l: int
+    nr: int
+    w: int
+
+    def __init__(self,r:int,c:int,output_length:int, mbits:list[int]) -> None:
+        """
+        Specification assumes Keccak (SHA3) with b = 1600
+        """
+        self.r = r
+        self.c = c
+        self.output_length = output_length
+        self.mbits = mbits
+
+        self.b = 1600
+        self.l = 6
+        self.nr = 24
+        self.w = 64
 
 class SHA3():
     specs: SHA3Specification
@@ -23,49 +41,60 @@ class SHA3():
 
     def _instance_param_to_specs(self, instance: SHA3Instance) -> SHA3Specification:
         if instance == SHA3Instance.SHA224:
-            return SHA3Specification(1152,448, 224,"01")
+            return SHA3Specification(1152,448, 224,[0,1])
 
         if instance == SHA3Instance.SHA256:
-            return SHA3Specification(1088,512, 256,"01")
+            return SHA3Specification(1088,512, 256,[0,1])
 
         if instance == SHA3Instance.SHA384:
-            return SHA3Specification(832,768, 384,"01")
+            return SHA3Specification(832,768, 384,[0,1])
 
         if instance == SHA3Instance.SHA512:
-            return SHA3Specification(576,1024, 512,"01")
+            return SHA3Specification(576,1024, 512,[0,1])
 
         raise ValueError()
 
-    def _pad_message(self, message: str) -> str:
+    def _pad_message(self, intermediate: list[int]) -> str:
         """
-        Return the padded message
+        Return the padded binary list (intermediate)
 
-        Message is padded such that it's divisible by r
+        Intermediate is padded such that it's divisible by r
         """
         r = self.specs.r
 
-        if len(message) % r == 0:
-            return message
+        if len(intermediate) % r == 0:
+            return intermediate
 
-        padded_message = message + (r - len(message) % r) * b"\x00"
-        return padded_message
+        # add pad of P (mbits)
+        intermediate.extend(self.specs.mbits)
 
-    def digest(self, message: str) -> bytes:
-        # Encodes and hexify message, this assumes message is in UTF-8 format
-        intermediate = message.encode()
-        print(intermediate, type(intermediate))
+        # add pad of 10*1
+        intermediate.extend([1,0])
+        while (len(intermediate) + 1) % r != 0:
+            intermediate.append(0)
+        intermediate.append(1)
+
+        return intermediate
+
+    def binary_list_to_string(self, binary_list: list[int]) -> str:
+        binary_string = "".join(str(bit) for bit in binary_list)
+        n = int(binary_string, 2)
+        return n.to_bytes((n.bit_length() + 7) // 8, 'big').decode()
+
+    def digest(self, message: str) -> str:
+        # Convert message to a binary list
+        intermediate = [int(b) for ch in message for b in bin(ord(ch))[2:].zfill(8)]
+
         intermediate = self._pad_message(intermediate)
 
-        digest = intermediate
+        digest_string = self.binary_list_to_string(intermediate)
 
-        return digest
+        return digest_string
 
 # Example usage
 
-plain = "Hello world!"
+plain = "ABC"
 sha3 = SHA3(SHA3Instance.SHA256)
 digest = sha3.digest(plain)
-text = digest.decode("utf-8")
 
 print(digest)
-print(text)
