@@ -147,22 +147,22 @@ def gen_ecdsa_public_key(private_key: str) -> str:
     y = hex(pubkey_point.y)[2:].rjust(64, "0")
     return "04" + x + y
 
-private_key = gen_ecdsa_private_key()
+# private_key = gen_ecdsa_private_key()
 
-# Public key is the generator point multiplied by the private key
-public_key_uncompressed = gen_ecdsa_public_key(private_key)
+# # Public key is the generator point multiplied by the private key
+# public_key_uncompressed = gen_ecdsa_public_key(private_key)
 
-print(public_key_uncompressed)
+# print(public_key_uncompressed)
 
-msg = "Hello World!"
-hash_digest = int(hashlib.sha256(msg.encode()).hexdigest(), 16)
+# msg = "Hello World!"
+# hash_digest = int(hashlib.sha256(msg.encode()).hexdigest(), 16)
 
-signature = sign(int(private_key, 16), hash_digest, 12345678)
+# signature = sign(int(private_key, 16), hash_digest, 12345678)
 
-# should be true
-print(verify(public_key_uncompressed, signature, hash_digest))
+# # should be true
+# print(verify(public_key_uncompressed, signature, hash_digest))
 
-wrong_public_key_uncompressed = "04" + "0" * 128
+# wrong_public_key_uncompressed = "04" + "0" * 128
 
-# should be false
-print(verify(wrong_public_key_uncompressed, signature, hash_digest))
+# # should be false
+# print(verify(wrong_public_key_uncompressed, signature, hash_digest))

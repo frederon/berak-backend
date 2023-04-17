@@ -6,12 +6,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
 from io import BytesIO
 from . import vigenere, vigenere_auto, vigenere_extended, affine, hill, playfair, enigma, utils
+from .crypto import elliptic_curve
 
 app = FastAPI()
 
 origins = [
-    "http://localhost:3000",
-    "localhost:3000"
+    "*"
 ]
 
 
@@ -26,7 +26,7 @@ app.add_middleware(
 
 @app.get("/", tags=["root"])
 async def read_root() -> dict:
-    return {"message": "Cryptography Tucil 1 API"}
+    return {"message": "Cryptography Tugas 3 API"}
 
 
 class VigenereEncryptRequest(BaseModel):
@@ -432,5 +432,19 @@ async def enigma_decrypt(body: EnigmaDecryptRequest) -> dict:
         )
         plaintext = decryptor.encrypt(body.ciphertext)
         return {"plaintext": plaintext}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+class ECGenerateKeyResponse(BaseModel):
+    private_key: str
+    public_key: str
+
+
+@app.get("/elliptic_curve/generate_key", tags=["elliptic_curve"], response_model=ECGenerateKeyResponse)
+async def elliptic_curve_generate_key() -> dict:
+    try:
+        private_key = elliptic_curve.gen_ecdsa_private_key()
+        public_key = elliptic_curve.gen_ecdsa_public_key(private_key)
+        return {"private_key": private_key, "public_key": public_key}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
