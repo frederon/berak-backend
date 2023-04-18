@@ -1,3 +1,4 @@
+import base64
 import re
 
 
@@ -16,3 +17,15 @@ def split(string, num):
 def uppercase_and_filter_alphabets(string):
     string = string.upper()
     return re.sub('[^A-Z]+', '', string)
+
+def convert_hex_digits_to_int_16(hex_digits):
+    hex_chars = [format(x, 'x') for x in hex_digits]
+    hex_str = ''.join(hex_chars)
+    result = int(hex_str, 16)
+    return result
+
+def convert_str_to_base64(text):
+    return base64.b64encode(text.encode('ascii')).decode('ascii')
+
+def append_signature_to_message(message, signature):
+    return f"{message}\n\n<ds>{signature}</ds>"

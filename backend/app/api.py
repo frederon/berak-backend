@@ -1,10 +1,11 @@
 # pylint: disable=no-self-argument,no-self-use,broad-except
-from typing import Dict, List
+import base64
+import json
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
 from . import utils
-from .crypto import elliptic_curve, block_cipher
+from .crypto import elliptic_curve, block_cipher, sha3
 
 app = FastAPI()
 
@@ -96,4 +97,47 @@ async def elliptic_curve_generate_key() -> dict:
         public_key = elliptic_curve.gen_ecdsa_public_key(private_key)
         return {"private_key": private_key, "public_key": public_key}
     except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    
+class DigitalSignRequest(BaseModel):
+    plaintext: str
+    private_key: str
+    
+    @validator('private_key')
+    def validate_private_key(cls, private_key):
+        return int(private_key, 16)
+
+
+class DigitalSignResponse(BaseModel):
+    plaintext_with_signature: str
+    signature: str
+    raw_signature: dict
+
+
+@app.post("/elliptic_curve/sign", tags=["elliptic_curve"], response_model=DigitalSignResponse)
+async def digital_sign(body: DigitalSignRequest) -> dict:
+    try:
+        sha3_instance = sha3.SHA3(sha3.SHA3Instance.SHA256)
+
+        hex_digits = sha3_instance.digest(body.plaintext)
+        hash_digest = utils.convert_hex_digits_to_int_16(hex_digits)
+
+        signature = elliptic_curve.sign(body.private_key, hash_digest)
+
+        signature_dict = {
+            "r": str(signature.r),
+            "s": str(signature.s)
+        }
+        signature_json = json.dumps(signature_dict)
+        signature_base64 = utils.convert_str_to_base64(signature_json)
+
+        plaintext_with_signature = utils.append_signature_to_message(body.plaintext, signature_base64)
+
+        return {
+            "plaintext_with_signature": plaintext_with_signature,
+            "signature": signature_base64,
+            "raw_signature": signature_dict
+        }
+    except Exception as e:
+        print(e)
         raise HTTPException(status_code=400, detail=str(e)) from e
