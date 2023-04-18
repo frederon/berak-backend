@@ -29,9 +29,12 @@ class SHA3Specification():
         self.mbits = mbits
 
         self.b = 1600
+        assert self.b == r + c
+
         self.l = 6
         self.nr = 24
         self.w = 64
+
 
 class SHA3():
     specs: SHA3Specification
@@ -76,20 +79,57 @@ class SHA3():
 
         return intermediate
 
-    def binary_list_to_string(self, binary_list: list[int]) -> str:
-        binary_string = "".join(str(bit) for bit in binary_list)
-        n = int(binary_string, 2)
-        return n.to_bytes((n.bit_length() + 7) // 8, 'big').decode()
+    def _xor_word(self, l1:list[int], l2:list[int]) -> list[int]:
+        print(l1)
+        print(l2)
+        assert len(l1) == len(l2)
+
+        l3 = [0 for _ in range(len(l1))]
+
+        for i in range(len(l1)):
+            l3[i] = l1[i] ^ l2[i]
+
+        return l3
 
     def digest(self, message: str) -> str:
         # Convert message to a binary list
         intermediate = [int(b) for ch in message for b in bin(ord(ch))[2:].zfill(8)]
 
+        intermediate = self._keccak(intermediate)
+
+        return intermediate
+
+    def _keccak(self, intermediate:list[int]) -> list[int]:
+        r = self.specs.r
+        w = self.specs.w
+
+        # Padding
         intermediate = self._pad_message(intermediate)
 
-        digest_string = self.binary_list_to_string(intermediate)
+        # Initialization
+        S = [[[0 for _ in range(w)] for _ in range(5)] for _ in range(5)]
 
-        return digest_string
+        # Absorbing phase
+        # for i in range(0, int(len(intermediate)/r), r):
+        #     pi = intermediate[i:i+r]
+
+        #     for y in range(len(S)):
+        #         for x in range(len(S)):
+        #             if x + 5*y < r/w:
+        #                 S[y][x] = self._xor_word(S[y][x], pi[x+5*y:x+5*y+w])
+        #                 S = self._keccak_f1600_permutation(S)
+
+        # Squeezing phase, we assumes only 1 output that is requested (fixed length)
+        Z = []
+        for y in range(len(S)):
+            for x in range(len(S)):
+                if x + 5*y < r/w:
+                    Z.append(S[y][x])
+
+        return intermediate
+
+    def _keccak_f1600_permutation(self, state: list[int]) -> list[int]:
+        return state
 
 # Example usage
 
