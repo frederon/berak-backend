@@ -27,5 +27,20 @@ def convert_hex_digits_to_int_16(hex_digits):
 def convert_str_to_base64(text):
     return base64.b64encode(text.encode('ascii')).decode('ascii')
 
+def convert_base64_to_str(base64_str):
+    return base64.b64decode(base64_str).decode('ascii')
+
 def append_signature_to_message(message, signature):
     return f"{message}\n\n<ds>{signature}</ds>"
+
+def extract_signature_from_message(appended):
+    # Split the appended string using the signature delimiters
+    parts = appended.split("\n\n<ds>", 1)
+    if len(parts) != 2:
+        raise ValueError("Signature not found in message or invalid format")
+    message = parts[0]
+
+    # Remove the closing </ds> tag from the signature
+    signature = parts[1].rstrip("</ds>").rstrip('\u0000').rstrip('\x00')
+
+    return message, signature

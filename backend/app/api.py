@@ -141,3 +141,35 @@ async def digital_sign(body: DigitalSignRequest) -> dict:
     except Exception as e:
         print(e)
         raise HTTPException(status_code=400, detail=str(e)) from e
+    
+class DigitalSignVerifyRequest(BaseModel):
+    plaintext_with_signature: str
+    public_key: str
+
+class DigitalSignVerifyResponse(BaseModel):
+    verified: bool
+
+
+@app.post("/elliptic_curve/verify", tags=["elliptic_curve"], response_model=DigitalSignVerifyResponse)
+async def digital_sign_verify(body: DigitalSignVerifyRequest) -> dict:
+    try:
+        plaintext, signature_base64 = utils.extract_signature_from_message(body.plaintext_with_signature)
+
+        sha3_instance = sha3.SHA3(sha3.SHA3Instance.SHA256)
+
+        hex_digits = sha3_instance.digest(plaintext)
+        hash_digest = utils.convert_hex_digits_to_int_16(hex_digits)
+
+        signature_json = utils.convert_base64_to_str(signature_base64)
+        signature_dict = json.loads(signature_json)
+
+        signature = elliptic_curve.Signature(int(signature_dict["r"]), int(signature_dict["s"]))
+
+        verified = elliptic_curve.verify(body.public_key, signature, hash_digest)
+
+        return {
+            "verified": verified
+        }
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=400, detail=str(e)) from e
