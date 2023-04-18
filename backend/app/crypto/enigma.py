@@ -9,7 +9,6 @@
 from typing import List, Dict
 from enum import Enum
 
-
 class EnigmaRotor(Enum):
     I = 0
     II = 1
@@ -59,35 +58,34 @@ class EnigmaRotor(Enum):
 
         raise ValueError()
 
-
 class EnigmaMachine:
     REFLECTOR = {
-        "A": "Y",
-        "Y": "A",
-        "B": "R",
-        "R": "B",
-        "C": "U",
-        "U": "C",
-        "D": "H",
-        "H": "D",
-        "E": "Q",
-        "Q": "E",
-        "F": "S",
-        "S": "F",
-        "G": "L",
-        "L": "G",
-        "I": "P",
-        "P": "I",
-        "J": "X",
-        "X": "J",
-        "K": "N",
-        "N": "K",
-        "M": "O",
-        "O": "M",
-        "T": "Z",
-        "Z": "T",
-        "V": "W",
-        "W": "V"
+        "A":"Y",
+        "Y":"A",
+        "B":"R",
+        "R":"B",
+        "C":"U",
+        "U":"C",
+        "D":"H",
+        "H":"D",
+        "E":"Q",
+        "Q":"E",
+        "F":"S",
+        "S":"F",
+        "G":"L",
+        "L":"G",
+        "I":"P",
+        "P":"I",
+        "J":"X",
+        "X":"J",
+        "K":"N",
+        "N":"K",
+        "M":"O",
+        "O":"M",
+        "T":"Z",
+        "Z":"T",
+        "V":"W",
+        "W":"V"
     }
 
     '''
@@ -96,8 +94,7 @@ class EnigmaMachine:
         rotors: 3 positional EnigmaRotor (left to right). 
         rings: 3 positional rotor offset
     '''
-
-    def __init__(self, rotors: List[EnigmaRotor], positions: List[int], rings: List[int], plugboard: Dict[str, str]) -> None:
+    def __init__(self, rotors:List[EnigmaRotor], positions: List[int], rings: List[int], plugboard: Dict[str,str]) -> None:
         self.rotors = rotors
         self.rotor_positions = positions
         self.rings = rings
@@ -109,14 +106,14 @@ class EnigmaMachine:
         else:
             return letter
 
-    def _reflector_substitution(self, letter: str) -> str:
+    def _reflector_substitution(self, letter:str) -> str:
         return self.REFLECTOR[letter]
 
-    def _forward_substitution(self, letter: str) -> str:
+    def _forward_substitution(self, letter:str)->str:
         rotor_positions = self.rotor_positions
         rotors = self.rotors
         rings = self.rings
-        for i in range(len(rotors)-1, -1, -1):
+        for i in range(len(rotors)-1,-1,-1):
             rotor = rotors[i]
             rotor_wiring = EnigmaRotor.get_wiring(rotor)
             shift = rotor_positions[i] - rings[i]
@@ -126,7 +123,7 @@ class EnigmaMachine:
 
         return letter
 
-    def _backward_substitution(self, letter: str) -> str:
+    def _backward_substitution(self, letter:str)->str:
         rotor_positions = self.rotor_positions
         rotors = self.rotors
         rings = self.rings
@@ -135,37 +132,48 @@ class EnigmaMachine:
             rotor_inverse_wiring = EnigmaRotor.get_inverse_wiring(rotor)
             shift = rotor_positions[i] - rings[i]
 
-            letter = rotor_inverse_wiring[(
-                ord(letter) - ord("A") + shift) % 26]
+            letter = rotor_inverse_wiring[(ord(letter) - ord("A") + shift) % 26]
             letter = chr(ord("A") + (ord(letter) - ord("A") + 26 - shift) % 26)
 
         return letter
 
     def _advance_rotors(self):
-        if chr(self.rotor_positions[1] + ord('A')) == EnigmaRotor.get_turnover_notch(self.rotors[1]):
-            self.rotor_positions[1] = (self.rotor_positions[1] + 1) % 26
-            self.rotor_positions[0] = (self.rotor_positions[0] + 1) % 26
-        if chr(self.rotor_positions[2] + ord('A')) == EnigmaRotor.get_turnover_notch(self.rotors[2]):
-            self.rotor_positions[1] = (self.rotor_positions[1] + 1) % 26
+        # if chr(self.rotor_positions[1]  + ord('A')) == EnigmaRotor.get_turnover_notch(self.rotors[1]):
+        #     self.rotor_positions[1] = (self.rotor_positions[1] + 1) % 26
+        #     self.rotor_positions[0] = (self.rotor_positions[0] + 1) % 26
+        # if chr(self.rotor_positions[2]  + ord('A')) == EnigmaRotor.get_turnover_notch(self.rotors[2]):
+        #     self.rotor_positions[1] = (self.rotor_positions[1] + 1) % 26
 
-        self.rotor_positions[2] = (self.rotor_positions[2] + 1) % 26
+        # self.rotor_positions[2] = (self.rotor_positions[2] + 1) % 26
+        pass
 
     def encrypt(self, message: str) -> str:
         cipher_text = ""
         for letter in message:
             self._advance_rotors()
             letter = self._plugboard_substitution(letter)
+            print("initial plugboard", letter)
             letter = self._forward_substitution(letter)
-            letter = self._reflector_substitution(letter)
+            print("forward sub", letter)
+            # letter = self._reflector_substitution(letter)
+            # print("reflector sub", letter)
             letter = self._backward_substitution(letter)
+            print("backward sub", letter)
             letter = self._plugboard_substitution(letter)
+            print("final plugboard", letter)
             cipher_text += letter
+            print("============")
         return cipher_text
 
-# encryptor = EnigmaMachine(rotors=[EnigmaRotor.III, EnigmaRotor.IV, EnigmaRotor.II], positions=[24,9,3], rings=[1,3,6], plugboard={})
-# cipher = encryptor.encrypt("HELLOMYNAMEISENIGMAIMONEWELLKNOWNFORTHEVITALROLEIPLAYEDDURINGWWIIALANTURINGANDHISATTEMPTSTOCRACKTHEENIGMAMACHINECODECHANGEDHISTORY")
+encryptor = EnigmaMachine(rotors=[EnigmaRotor.I], 
+                          positions=[0,0,0], rings=[0,0,0], plugboard={})
+cipher = encryptor.encrypt("H")
 
-# decryptor = EnigmaMachine(rotors=[EnigmaRotor.III, EnigmaRotor.IV, EnigmaRotor.II], positions=[24,9,3], rings=[1,3,6], plugboard={})
-# plaintext = decryptor.encrypt(cipher)
-# print(cipher)
-# print(plaintext)
+decryptor = EnigmaMachine(rotors=[EnigmaRotor.I],
+                           positions=[0,0,0], rings=[0,0,0],  plugboard={})
+plaintext = decryptor.encrypt(cipher)
+print(cipher)
+print(plaintext)
+
+print(EnigmaRotor.get_wiring(EnigmaRotor.I)[ord('H') - ord('A')])
+print(EnigmaRotor.get_inverse_wiring(EnigmaRotor.I)[ord('Q') - ord('A')])
