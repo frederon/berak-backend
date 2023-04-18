@@ -35,6 +35,32 @@ class SHA3Specification():
         self.nr = 24
         self.w = 64
 
+KECCAK_RC = [
+    "0x0000000000000001",
+    "0x0000000000008082",
+    "0x800000000000808A",
+    "0x8000000080008000",
+    "0x000000000000808B",
+    "0x0000000080000001",
+    "0x8000000080008081",
+    "0x8000000000008009",
+    "0x000000000000008A",
+    "0x0000000000000088",
+    "0x0000000080008009",
+    "0x000000008000000A",
+    "0x000000008000808B",
+    "0x800000000000008B",
+    "0x8000000000008089",
+    "0x8000000000008003",
+    "0x8000000000008002",
+    "0x8000000000000080",
+    "0x000000000000800A",
+    "0x800000008000000A",
+    "0x8000000080008081",
+    "0x8000000000008080",
+    "0x0000000080000001",
+    "0x8000000080008008",
+]
 
 class SHA3():
     specs: SHA3Specification
@@ -89,6 +115,17 @@ class SHA3():
 
         return l3
 
+    def _rotl(self, x:list[int], n:int) -> list[int]:
+        return x[n:] + x[:n]
+
+    def _neg_word(self, x:list[int]) -> list[int]:
+        return [~bit & 1 for bit in x]
+
+    def _and_word(self, l1:list[int], l2:list[int]) -> list[int]:
+        assert len(l1) == len(l2)
+
+        return [l1[i] & l2[i] for i in range(len(l1))]
+
     def digest(self, message: str) -> str:
         # Convert message to a binary list
         intermediate = [int(b) for ch in message for b in bin(ord(ch))[2:].zfill(8)]
@@ -132,11 +169,47 @@ class SHA3():
         return Z[:output_length]
 
     def _keccak_f1600_permutation(self, state: list[int]) -> list[int]:
+        nr = self.specs.nr
+        w = self.specs.w
+
+        def round1600(A: list[list[int]], RC:list[int]) -> list[int]:
+            # Theta
+            C = [[0 for _ in range(w)] for _ in range(5)]
+            D = [[0 for _ in range(w)] for _ in range(5)]
+
+            for x in range(5):
+                C[x] = self._xor_word(self._xor_word(self._xor_word(self._xor_word(A[0][x], A[1][x]), A[2][x]), A[3][x]), A[4][x])
+
+            for x in range(5):
+                D[x] = self._xor_word(C[(x-1) % 5], self._rotl(C[(x+1) % 5], 1))
+
+            A = [[self._xor_word(A[y][x], D[x]) for x in range(5)] for y in range(5)]
+
+            # Rho Pi
+            x, y = 1, 0
+            current = A[y][x]
+            for t in range(24):
+                x, y = y, (2*x+3*y) % 5
+                current, A[y][x] = A[y][x], self._rotl(current, (t+1)*(t+2)//2)
+
+            # Chi
+            for y in range(5):
+                T = [A[y][x] for x in range(5)]
+                for x in range(5):
+                    A[y][x] = self._xor_word(T[x], self._and_word(self._neg_word(T[(x+1)%5]), T[(x+2) % 5]))
+
+            # Iota
+            A[0][0] = self._xor_word(A[0][0], RC)
+
+            return A
+
+        for i in range(nr):
+            state = round1600(state, [int(bit) for byte in bytes.fromhex(KECCAK_RC[i][2:]) for bit in f"{byte:08b}"][-w:])
         return state
 
 # Example usage
 
-plain = "ABC"
+plain = "ABCD"
 sha3 = SHA3(SHA3Instance.SHA256)
 digest = sha3.digest(plain)
 
