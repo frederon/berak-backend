@@ -1,7 +1,7 @@
 # pylint: disable=no-self-argument,no-self-use,broad-except
 import base64
 import json
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
 from . import utils
@@ -45,11 +45,12 @@ class BlockCipherEncryptResponse(BaseModel):
 
 
 @app.post("/block_cipher/encrypt", tags=["block_cipher"], response_model=BlockCipherEncryptResponse)
-async def block_cipher_encrypt(body: BlockCipherEncryptRequest) -> dict:
+async def block_cipher_encrypt(plaintext: str = Form(...), key: str = Form(...)) -> dict:
     try:
-        print(body)
-        cipher = block_cipher.BlockCipher(body.key)
-        ciphertext = cipher.encrypt(body.plaintext)
+        plaintext = bytes(plaintext, 'utf-8')
+        key = bytes(key, 'utf-8')
+        cipher = block_cipher.BlockCipher(key)
+        ciphertext = cipher.encrypt(plaintext)
         return {
             "ciphertext": ciphertext.decode('utf-8')
         }
@@ -75,10 +76,12 @@ class BlockCipherDecryptResponse(BaseModel):
 
 
 @app.post("/block_cipher/decrypt", tags=["block_cipher"], response_model=BlockCipherDecryptResponse)
-async def enigma_decrypt(body: BlockCipherDecryptRequest) -> dict:
+async def block_cipher_decrypt(ciphertext: str = Form(...), key: str = Form(...)) -> dict:
     try:
-        cipher = block_cipher.BlockCipher(body.key)
-        plaintext = cipher.decrypt(body.ciphertext)
+        ciphertext = bytes(ciphertext, 'utf-8')
+        key = bytes(key, 'utf-8')
+        cipher = block_cipher.BlockCipher(key)
+        plaintext = cipher.decrypt(ciphertext)
         return {
             "plaintext": plaintext.decode('utf-8')
         }
@@ -115,14 +118,17 @@ class DigitalSignResponse(BaseModel):
 
 
 @app.post("/elliptic_curve/sign", tags=["elliptic_curve"], response_model=DigitalSignResponse)
-async def digital_sign(body: DigitalSignRequest) -> dict:
+async def digital_sign(plaintext: str = Form(...), private_key: str = Form(...)) -> dict:
     try:
+        private_key = private_key.rstrip().rstrip('\n')
+        private_key = int(private_key, 16)
+
         sha3_instance = sha3.SHA3(sha3.SHA3Instance.SHA256)
 
-        hex_digits = sha3_instance.digest(body.plaintext)
+        hex_digits = sha3_instance.digest(plaintext)
         hash_digest = utils.convert_hex_digits_to_int_16(hex_digits)
 
-        signature = elliptic_curve.sign(body.private_key, hash_digest)
+        signature = elliptic_curve.sign(private_key, hash_digest)
 
         signature_dict = {
             "r": str(signature.r),
@@ -131,7 +137,7 @@ async def digital_sign(body: DigitalSignRequest) -> dict:
         signature_json = json.dumps(signature_dict)
         signature_base64 = utils.convert_str_to_base64(signature_json)
 
-        plaintext_with_signature = utils.append_signature_to_message(body.plaintext, signature_base64)
+        plaintext_with_signature = utils.append_signature_to_message(plaintext, signature_base64)
 
         return {
             "plaintext_with_signature": plaintext_with_signature,
@@ -151,9 +157,11 @@ class DigitalSignVerifyResponse(BaseModel):
 
 
 @app.post("/elliptic_curve/verify", tags=["elliptic_curve"], response_model=DigitalSignVerifyResponse)
-async def digital_sign_verify(body: DigitalSignVerifyRequest) -> dict:
+async def digital_sign_verify(plaintext_with_signature: str = Form(...), public_key: str = Form(...)) -> dict:
     try:
-        plaintext, signature_base64 = utils.extract_signature_from_message(body.plaintext_with_signature)
+        public_key = public_key.rstrip().rstrip('\n')
+        
+        plaintext, signature_base64 = utils.extract_signature_from_message(plaintext_with_signature)
 
         sha3_instance = sha3.SHA3(sha3.SHA3Instance.SHA256)
 
@@ -165,7 +173,7 @@ async def digital_sign_verify(body: DigitalSignVerifyRequest) -> dict:
 
         signature = elliptic_curve.Signature(int(signature_dict["r"]), int(signature_dict["s"]))
 
-        verified = elliptic_curve.verify(body.public_key, signature, hash_digest)
+        verified = elliptic_curve.verify(public_key, signature, hash_digest)
 
         return {
             "verified": verified
