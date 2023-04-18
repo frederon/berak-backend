@@ -213,4 +213,4 @@ plain = "ABCD"
 sha3 = SHA3(SHA3Instance.SHA256)
 digest = sha3.digest(plain)
 
-print(digest)
+# print(digest)
