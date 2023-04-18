@@ -80,8 +80,6 @@ class SHA3():
         return intermediate
 
     def _xor_word(self, l1:list[int], l2:list[int]) -> list[int]:
-        print(l1)
-        print(l2)
         assert len(l1) == len(l2)
 
         l3 = [0 for _ in range(len(l1))]
@@ -102,6 +100,7 @@ class SHA3():
     def _keccak(self, intermediate:list[int]) -> list[int]:
         r = self.specs.r
         w = self.specs.w
+        output_length = self.specs.output_length
 
         # Padding
         intermediate = self._pad_message(intermediate)
@@ -110,23 +109,27 @@ class SHA3():
         S = [[[0 for _ in range(w)] for _ in range(5)] for _ in range(5)]
 
         # Absorbing phase
-        # for i in range(0, int(len(intermediate)/r), r):
-        #     pi = intermediate[i:i+r]
+        for i in range(0, int(len(intermediate)/r), r):
+            pi = intermediate[i:i+r]
 
-        #     for y in range(len(S)):
-        #         for x in range(len(S)):
-        #             if x + 5*y < r/w:
-        #                 S[y][x] = self._xor_word(S[y][x], pi[x+5*y:x+5*y+w])
-        #                 S = self._keccak_f1600_permutation(S)
+            for y in range(len(S)):
+                for x in range(len(S)):
+                    if x + 5*y < r/w:
+                        offset = (x + 5 *y) * w
+                        S[y][x] = self._xor_word(S[y][x], pi[offset:offset+w])
+                        S = self._keccak_f1600_permutation(S)
 
         # Squeezing phase, we assumes only 1 output that is requested (fixed length)
         Z = []
         for y in range(len(S)):
             for x in range(len(S)):
-                if x + 5*y < r/w:
-                    Z.append(S[y][x])
+                if len(Z) >= output_length:
+                    break
 
-        return intermediate
+                if x + 5*y < r/w:
+                    Z.extend(S[y][x])
+
+        return Z[:output_length]
 
     def _keccak_f1600_permutation(self, state: list[int]) -> list[int]:
         return state
