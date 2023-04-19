@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
 from . import utils
 from .crypto import elliptic_curve, block_cipher, sha3
+from bs4 import BeautifulSoup
 
 app = FastAPI()
 
@@ -78,7 +79,14 @@ class BlockCipherDecryptResponse(BaseModel):
 @app.post("/block_cipher/decrypt", tags=["block_cipher"], response_model=BlockCipherDecryptResponse)
 async def block_cipher_decrypt(ciphertext: str = Form(...), key: str = Form(...)) -> dict:
     try:
-        ciphertext = bytes(ciphertext, 'utf-8')
+        soup = BeautifulSoup(ciphertext, 'html.parser')
+        body_text = soup.body.get_text()
+
+        print(body_text)
+
+        ciphertext = body_text.encode().decode("unicode_escape").encode("raw_unicode_escape")
+        ciphertext = ciphertext.replace(b'\r\n', b'\n')
+        print(ciphertext)
         key = bytes(key, 'utf-8')
         cipher = block_cipher.BlockCipher(key)
         plaintext = cipher.decrypt(ciphertext)
