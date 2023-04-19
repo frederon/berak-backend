@@ -1,5 +1,6 @@
 # pylint: disable=no-self-argument,no-self-use,broad-except
 import base64
+import re
 import json
 from fastapi import FastAPI, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -52,6 +53,8 @@ async def block_cipher_encrypt(plaintext: str = Form(...), key: str = Form(...))
         key = bytes(key, 'utf-8')
         cipher = block_cipher.BlockCipher(key)
         ciphertext = cipher.encrypt(plaintext)
+        print('plaintext', plaintext)
+        print('ciphertext', ciphertext)
         return {
             "ciphertext": ciphertext.decode('utf-8')
         }
@@ -90,10 +93,13 @@ async def block_cipher_decrypt(ciphertext: str = Form(...), key: str = Form(...)
         key = bytes(key, 'utf-8')
         cipher = block_cipher.BlockCipher(key)
         plaintext = cipher.decrypt(ciphertext)
+        print('ciphertext', ciphertext)
+        print('plaintext', plaintext)
         return {
             "plaintext": plaintext.decode('utf-8')
         }
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 class ECGenerateKeyResponse(BaseModel):
@@ -165,11 +171,11 @@ class DigitalSignVerifyResponse(BaseModel):
 
 
 @app.post("/elliptic_curve/verify", tags=["elliptic_curve"], response_model=DigitalSignVerifyResponse)
-async def digital_sign_verify(plaintext_with_signature: str = Form(...), public_key: str = Form(...)) -> dict:
+async def digital_sign_verify(plaintext: str = Form(...), signature_base64: str = Form(...), public_key: str = Form(...)) -> dict:
     try:
         public_key = public_key.rstrip().rstrip('\n')
         
-        plaintext, signature_base64 = utils.extract_signature_from_message(plaintext_with_signature)
+        # plaintext, signature_base64 = utils.extract_signature_from_message(plaintext_with_signature)
 
         sha3_instance = sha3.SHA3(sha3.SHA3Instance.SHA256)
 
