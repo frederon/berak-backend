@@ -1,11 +1,14 @@
 # pylint: disable=no-self-argument,no-self-use,broad-except
 import base64
+import re
 import json
+from bs4 import BeautifulSoup
 from fastapi import FastAPI, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
 from . import utils
 from .crypto import elliptic_curve, block_cipher, sha3
+import html
 
 app = FastAPI()
 
@@ -47,10 +50,13 @@ class BlockCipherEncryptResponse(BaseModel):
 @app.post("/block_cipher/encrypt", tags=["block_cipher"], response_model=BlockCipherEncryptResponse)
 async def block_cipher_encrypt(plaintext: str = Form(...), key: str = Form(...)) -> dict:
     try:
+        print("===== ENCRYPT =====")
         plaintext = bytes(plaintext, 'utf-8')
         key = bytes(key, 'utf-8')
         cipher = block_cipher.BlockCipher(key)
         ciphertext = cipher.encrypt(plaintext)
+        print('plaintext', plaintext, len(plaintext))
+        print('ciphertext', ciphertext, len(plaintext))
         return {
             "ciphertext": ciphertext.decode('utf-8')
         }
@@ -78,14 +84,37 @@ class BlockCipherDecryptResponse(BaseModel):
 @app.post("/block_cipher/decrypt", tags=["block_cipher"], response_model=BlockCipherDecryptResponse)
 async def block_cipher_decrypt(ciphertext: str = Form(...), key: str = Form(...)) -> dict:
     try:
-        ciphertext = bytes(ciphertext, 'utf-8')
+        print("===== DECRYPT ======")
+        start_index = ciphertext.find("<body>") + len("<body>")
+        end_index = ciphertext.find("</body>")
+
+        body_text = ciphertext[start_index:end_index]
+
+        print("---- CIPHER -----")
+        print(ciphertext)
+
+        soup = BeautifulSoup(ciphertext, 'html.parser')
+        body_text = soup.body.get_text()
+        print("=" * 20)
+        print("---- BODY TEXT ----")
+        print(body_text)
+        print("=" * 20)   
+
+        ciphertext = body_text.encode().decode("unicode_escape").encode("raw_unicode_escape")
+        ciphertext = ciphertext.replace(b'\r\n', b'\n')
+        print(ciphertext)
+        print("=" * 20)
         key = bytes(key, 'utf-8')
-        cipher = block_cipher.BlockCipher(key)
+        cipher = block_cipher.BlockCipher(key) 
         plaintext = cipher.decrypt(ciphertext)
+        print('ciphertext', ciphertext)
+        print("=" * 20)
+        print('plaintext', plaintext)
         return {
             "plaintext": plaintext.decode('utf-8')
         }
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 class ECGenerateKeyResponse(BaseModel):
@@ -157,11 +186,11 @@ class DigitalSignVerifyResponse(BaseModel):
 
 
 @app.post("/elliptic_curve/verify", tags=["elliptic_curve"], response_model=DigitalSignVerifyResponse)
-async def digital_sign_verify(plaintext_with_signature: str = Form(...), public_key: str = Form(...)) -> dict:
+async def digital_sign_verify(plaintext: str = Form(...), signature_base64: str = Form(...), public_key: str = Form(...)) -> dict:
     try:
         public_key = public_key.rstrip().rstrip('\n')
         
-        plaintext, signature_base64 = utils.extract_signature_from_message(plaintext_with_signature)
+        # plaintext, signature_base64 = utils.extract_signature_from_message(plaintext_with_signature)
 
         sha3_instance = sha3.SHA3(sha3.SHA3Instance.SHA256)
 
